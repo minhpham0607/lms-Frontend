@@ -1,0 +1,382 @@
+<div class="course-statistics-container">
+  <app-sidebaradmin></app-sidebaradmin>
+  
+  <main class="main-content">
+    <div class="header">
+      <h1>Thống kê khóa học</h1>
+      <app-profile 
+        [username]="username" 
+        [avatarUrl]="avatarUrl"
+        (profileUpdate)="onProfileUpdate()"
+        (logout)="onLogout()">
+      </app-profile>
+    </div>
+
+    <div class="content" *ngIf="!loading; else loadingTemplate" id="statistics-content">
+      <!-- Statistics Cards -->
+      <div class="statistics-cards">
+        <div class="stat-card today" (click)="filterByToday()" [class.active]="selectedTimeFilter === 'today'">
+          <div class="stat-icon">
+            <i class="fas fa-calendar-day"></i>
+          </div>
+          <div class="stat-info">
+            <h3>{{ statistics.today }}</h3>
+            <p>Hôm nay</p>
+          </div>
+        </div>
+
+        <div class="stat-card week" (click)="filterByThisWeek()" [class.active]="selectedTimeFilter === 'thisWeek'">
+          <div class="stat-icon">
+            <i class="fas fa-calendar-week"></i>
+          </div>
+          <div class="stat-info">
+            <h3>{{ statistics.thisWeek }}</h3>
+            <p>Tuần này</p>
+          </div>
+        </div>
+
+        <div class="stat-card month" (click)="filterByThisMonth()" [class.active]="selectedTimeFilter === 'thisMonth'">
+          <div class="stat-icon">
+            <i class="fas fa-calendar-alt"></i>
+          </div>
+          <div class="stat-info">
+            <h3>{{ statistics.thisMonth }}</h3>
+            <p>Tháng này</p>
+          </div>
+        </div>
+
+        <div class="stat-card year" (click)="filterByThisYear()" [class.active]="selectedTimeFilter === 'thisYear'">
+          <div class="stat-icon">
+            <i class="fas fa-calendar"></i>
+          </div>
+          <div class="stat-info">
+            <h3>{{ statistics.thisYear }}</h3>
+            <p>Năm này</p>
+          </div>
+        </div>
+
+        <div class="stat-card total" (click)="filterByTotal()" [class.active]="!selectedTimeFilter && !searchTerm && !selectedStatus && !selectedCategory">
+          <div class="stat-icon">
+            <i class="fas fa-graduation-cap"></i>
+          </div>
+          <div class="stat-info">
+            <h3>{{ statistics.total }}</h3>
+            <p>Tổng cộng</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status Statistics Cards -->
+      <div class="status-statistics">
+        <div class="status-card published" 
+             (click)="filterByStatus('published')" 
+             [class.active]="selectedStatus === 'published'">
+          <div class="status-icon">
+            <i class="fas fa-eye"></i>
+          </div>
+          <div class="status-info">
+            <h3>{{ statistics.byStatus.published }}</h3>
+            <p>Published</p>
+          </div>
+        </div>
+
+        <div class="status-card archived" 
+             (click)="filterByStatus('archived')" 
+             [class.active]="selectedStatus === 'archived'">
+          <div class="status-icon">
+            <i class="fas fa-archive"></i>
+          </div>
+          <div class="status-info">
+            <h3>{{ statistics.byStatus.archived }}</h3>
+            <p>Archived</p>
+          </div>
+        </div>
+
+        <div class="status-card draft" 
+             (click)="filterByStatus('draft')" 
+             [class.active]="selectedStatus === 'draft'">
+          <div class="status-icon">
+            <i class="fas fa-edit"></i>
+          </div>
+          <div class="status-info">
+            <h3>{{ statistics.byStatus.draft }}</h3>
+            <p>Draft</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Quality Notice -->
+      <div class="data-quality-notice" *ngIf="!hasCreationDates || coursesWithoutDates > 0">
+        <div class="notice-content">
+          <i class="fas fa-exclamation-triangle"></i>
+          <div class="notice-text">
+            <h4>Thông báo về dữ liệu</h4>
+            <p *ngIf="!hasCreationDates">
+              Không có thông tin ngày tạo khóa học trong dữ liệu. Thống kê theo thời gian có thể không chính xác.
+            </p>
+            <p *ngIf="hasCreationDates && coursesWithoutDates > 0">
+              {{ coursesWithoutDates }} khóa học không có thông tin ngày tạo. 
+              Chỉ {{ statistics.total - coursesWithoutDates }} khóa học được tính vào thống kê theo thời gian.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="action-buttons">
+        <button class="btn btn-primary" (click)="refreshData()" [disabled]="loading">
+          <i class="fas fa-refresh"></i>
+          Làm mới
+        </button>
+        <button class="btn btn-secondary" (click)="exportStatistics()">
+          <i class="fas fa-download"></i>
+          Xuất JSON
+        </button>
+        <button class="btn btn-pdf" (click)="exportToPDF()">
+          <i class="fas fa-file-pdf"></i>
+          Xuất PDF
+        </button>
+      </div>
+
+      <!-- Charts Section -->
+      <div class="charts-section">
+        <!-- Monthly Creations Chart -->
+        <div class="chart-container monthly-chart">
+          <h3>Tạo khóa học tháng trong năm</h3>
+          <div class="chart">
+            <div class="chart-bars">
+              <div 
+                *ngFor="let item of monthlyCreations" 
+                class="bar-container monthly-bar-container"
+                [title]="item.label + ': ' + item.value + ' khóa học'"
+              >
+                <div 
+                  class="bar monthly-bar"
+                  [style.height.%]="getBarHeight(item.value, getMaxValue(monthlyCreations))"
+                >
+                  <span class="bar-value">{{ item.value }}</span>
+                </div>
+                <span class="bar-label monthly-label">{{ item.label.replace('Tháng ', '') }}</span>
+              </div>
+            </div>
+          </div>
+          <!-- Summary for PDF -->
+          <div class="chart-summary pdf-only">
+            <p><strong>Tổng tạo trong năm:</strong> {{ getTotalMonthlyCreations() }} khóa học</p>
+            <p><strong>Tháng có nhiều tạo nhất:</strong> 
+              {{ getPeakMonthlyCreation().label }} 
+              ({{ getPeakMonthlyCreation().value }} khóa học)
+            </p>
+          </div>
+        </div>
+
+        <!-- Status Distribution Chart -->
+        <div class="chart-container status-chart">
+          <h3>Phân bố theo trạng thái</h3>
+          <div class="chart">
+            <div class="chart-bars">
+              <div 
+                *ngFor="let item of statusDistribution" 
+                class="bar-container"
+                [title]="item.label + ': ' + item.value + ' khóa học'"
+              >
+                <div 
+                  class="bar status-bar"
+                  [style.height.%]="getBarHeight(item.value, getMaxValue(statusDistribution))"
+                  [ngClass]="{
+                    'bar-published': item.label === 'Published',
+                    'bar-archived': item.label === 'Archived',
+                    'bar-draft': item.label === 'Draft'
+                  }"
+                >
+                  <span class="bar-value">{{ item.value }}</span>
+                </div>
+                <span class="bar-label">{{ item.label }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- All Courses Section with Pagination -->
+      <div class="all-courses-section">
+        <div class="section-header">
+          <h3>Tất cả khóa học</h3>
+          <div class="total-count" *ngIf="totalCourses > 0">
+            <span class="count-badge">{{ totalCourses }}</span>
+            <span>{{ searchTerm || selectedStatus || selectedCategory ? 'kết quả' : 'khóa học' }}</span>
+          </div>
+        </div>
+        
+        <!-- Active Filter Notice -->
+        <div class="active-filter-notice" *ngIf="selectedTimeFilter || selectedStatus || searchTerm || selectedCategory">
+          <i class="fas fa-filter"></i>
+          <span>Đang hiển thị khóa học: 
+            <strong *ngIf="selectedTimeFilter">{{ getTimeFilterLabel() }}</strong>
+            <strong *ngIf="selectedStatus"> - Trạng thái: {{ getDisplayStatus(selectedStatus) }}</strong>
+            <strong *ngIf="searchTerm"> - Tìm kiếm: "{{ searchTerm }}"</strong>
+            <strong *ngIf="selectedCategory"> - Danh mục: {{ selectedCategory }}</strong>
+            <span *ngIf="!selectedTimeFilter && !selectedStatus && !searchTerm && !selectedCategory">tất cả khóa học</span>
+          </span>
+          <button class="btn-clear-time-filter" (click)="clearFilters()">
+            <i class="fas fa-times"></i> Xóa bộ lọc
+          </button>
+        </div>
+        
+        <!-- Filters and Search -->
+       
+        <!-- Results Info -->
+        <div class="results-info">
+          <span>Hiển thị {{ (currentPage - 1) * itemsPerPage + 1 }} - {{ getMaxDisplayed() }} của {{ totalCourses }} khóa học</span>
+          
+          <div class="items-per-page">
+            <label>Hiển thị:</label>
+            <select [value]="itemsPerPage" (change)="changeItemsPerPage(+$any($event).target.value)">
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+            <span>mục/trang</span>
+          </div>
+        </div>
+
+        <!-- All Courses Table -->
+        <div class="table-container">
+          <table class="courses-table">
+            <thead>
+              <tr>
+                <th class="sortable" (click)="sortBy('courseId')" [class.active]="sortField === 'courseId'">
+                  ID
+                  <i class="fas" [ngClass]="{
+                    'fa-sort': sortField !== 'courseId',
+                    'fa-sort-up': sortField === 'courseId' && sortDirection === 'asc',
+                    'fa-sort-down': sortField === 'courseId' && sortDirection === 'desc'
+                  }"></i>
+                </th>
+                <th class="sortable" (click)="sortBy('title')" [class.active]="sortField === 'title'">
+                  Tên khóa học
+                  <i class="fas" [ngClass]="{
+                    'fa-sort': sortField !== 'title',
+                    'fa-sort-up': sortField === 'title' && sortDirection === 'asc',
+                    'fa-sort-down': sortField === 'title' && sortDirection === 'desc'
+                  }"></i>
+                </th>
+                <th>Mô tả</th>
+                <th class="sortable" (click)="sortBy('categoryId')" [class.active]="sortField === 'categoryId'">
+                  Danh mục
+                  <i class="fas" [ngClass]="{
+                    'fa-sort': sortField !== 'categoryId',
+                    'fa-sort-up': sortField === 'categoryId' && sortDirection === 'asc',
+                    'fa-sort-down': sortField === 'categoryId' && sortDirection === 'desc'
+                  }"></i>
+                </th>
+                <th class="sortable" (click)="sortBy('price')" [class.active]="sortField === 'price'">
+                  Giá
+                  <i class="fas" [ngClass]="{
+                    'fa-sort': sortField !== 'price',
+                    'fa-sort-up': sortField === 'price' && sortDirection === 'asc',
+                    'fa-sort-down': sortField === 'price' && sortDirection === 'desc'
+                  }"></i>
+                </th>
+                <th class="sortable" (click)="sortBy('status')" [class.active]="sortField === 'status'">
+                  Trạng thái
+                  <i class="fas" [ngClass]="{
+                    'fa-sort': sortField !== 'status',
+                    'fa-sort-up': sortField === 'status' && sortDirection === 'asc',
+                    'fa-sort-down': sortField === 'status' && sortDirection === 'desc'
+                  }"></i>
+                </th>
+                <th class="sortable" (click)="sortBy('createdAt')" [class.active]="sortField === 'createdAt'">
+                  Ngày tạo
+                  <i class="fas" [ngClass]="{
+                    'fa-sort': sortField !== 'createdAt',
+                    'fa-sort-up': sortField === 'createdAt' && sortDirection === 'asc',
+                    'fa-sort-down': sortField === 'createdAt' && sortDirection === 'desc'
+                  }"></i>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let course of paginatedCourses">
+                <td>{{ course.courseId }}</td>
+                <td class="course-title">{{ course.title }}</td>
+                <td class="course-description">{{ course.description && course.description.length > 50 ? (course.description | slice:0:50) + '...' : (course.description || 'Chưa có mô tả') }}</td>
+                <td>Danh mục {{ course.categoryId }}</td>
+                <td class="course-price">{{ course.price | currency:'VND':'symbol':'1.0-0' }}</td>
+                <td>
+                  <span class="status-badge" [ngClass]="'status-' + course.status.toLowerCase()">
+                    {{ getDisplayStatus(course.status) }}
+                  </span>
+                </td>
+                <td>{{ getFormattedDate(getCourseDate(course)) }}</td>
+              </tr>
+            </tbody>
+          </table>
+          
+          <!-- Empty state -->
+          <div class="empty-state" *ngIf="paginatedCourses.length === 0 && !loading">
+            <i class="fas fa-graduation-cap"></i>
+            <h4>Không tìm thấy khóa học</h4>
+            <p>Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
+          </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination-container" *ngIf="totalPages > 1">
+          <button 
+            class="pagination-btn" 
+            [disabled]="currentPage === 1" 
+            (click)="previousPage()"
+          >
+            <i class="fas fa-chevron-left"></i>
+            Trước
+          </button>
+          
+          <div class="page-numbers">
+            <button 
+              *ngFor="let page of getPageNumbers()" 
+              class="page-number"
+              [class.active]="page === currentPage"
+              (click)="goToPage(page)"
+            >
+              {{ page }}
+            </button>
+          </div>
+          
+          <button 
+            class="pagination-btn" 
+            [disabled]="currentPage === totalPages" 
+            (click)="nextPage()"
+          >
+            Sau
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading Template -->
+    <ng-template #loadingTemplate>
+      <div class="loading-container">
+        <div class="loading-spinner">
+          <i class="fas fa-spinner fa-spin"></i>
+        </div>
+        <p>Đang tải dữ liệu thống kê khóa học...</p>
+      </div>
+    </ng-template>
+
+    <!-- Error State -->
+    <div class="error-container" *ngIf="error && !loading">
+      <div class="error-content">
+        <i class="fas fa-exclamation-triangle"></i>
+        <h3>Có lỗi xảy ra</h3>
+        <p>{{ error }}</p>
+        <button class="btn btn-primary" (click)="refreshData()">
+          <i class="fas fa-refresh"></i>
+          Thử lại
+        </button>
+      </div>
+    </div>
+  </main>
+</div>

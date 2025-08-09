@@ -1,0 +1,363 @@
+<app-notification></app-notification>
+<div class="layout-row">
+  <aside class="sidebar" role="complementary" aria-label="Sidebar navigation">
+    <app-sidebar-wrapper></app-sidebar-wrapper>
+  </aside>
+
+  <div class="main-content">
+    <!-- Profile component -->
+    <div class="profile-header">
+      <app-profile
+        [username]="username"
+        [role]="getDisplayRole(userRole)"
+        [avatarUrl]="avatarUrl"
+        (profileUpdate)="onProfileUpdate()"
+        (logout)="onLogout()">
+      </app-profile>
+    </div>
+
+    <main>
+      <div class="breadcrumb">
+        <button (click)="toggleLeftMenu()" aria-label="Toggle left menu">
+          <i class="fas fa-bars"></i>
+        </button>
+        <nav class="breadcrumb-nav" *ngIf="courseInfo || courseId">
+          <span class="breadcrumb-item course-name">
+            {{ courseInfo?.title || ('Course ' + courseId) }}
+          </span>
+          <span class="breadcrumb-separator">></span>
+          <span class="breadcrumb-item current-page">Grades</span>
+        </nav>
+      </div>
+
+      <div class="content-wrapper" [ngClass]="{ 'menu-hidden': leftMenuHidden }">
+        <div class="left-menu" [ngClass]="{ hide: leftMenuHidden, show: !leftMenuHidden }">
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Home' }">
+            <a href="#" (click)="navigateToHome(); $event.preventDefault()"
+              [ngClass]="{ 'active-link': currentPage === 'Home' }">
+              <span *ngIf="currentPage === 'Home'" class="active-indicator">|</span>
+              <span class="menu-text">Home</span>
+            </a>
+          </div>
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Discussion' }">
+            <a href="#" (click)="navigateToDiscussion(); $event.preventDefault()"
+              [ngClass]="{ 'active-link': currentPage === 'Discussion' }">
+              <span *ngIf="currentPage === 'Discussion'" class="active-indicator">|</span>
+              <span class="menu-text">Discussion</span>
+            </a>
+          </div>
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Grades' }">
+            <a href="#" (click)="navigateToGrades(); $event.preventDefault()"
+              [ngClass]="{ 'active-link': currentPage === 'Grades' }">
+              <span *ngIf="currentPage === 'Grades'" class="active-indicator">|</span>
+              <span class="menu-text">Grades</span>
+            </a>
+          </div>
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Modules' }">
+            <a href="#" (click)="navigateToModules(); $event.preventDefault()"
+              [ngClass]="{ 'active-link': currentPage === 'Modules' }">
+              <span *ngIf="currentPage === 'Modules'" class="active-indicator">|</span>
+              <span class="menu-text">Modules</span>
+            </a>
+          </div>
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Video' }" *ngIf="!isStudent()">
+            <a href="#" (click)="navigateToVideo(); $event.preventDefault()"
+              [ngClass]="{ 'active-link': currentPage === 'Video' }">
+              <span *ngIf="currentPage === 'Video'" class="active-indicator">|</span>
+              <span class="menu-text">Video</span>
+            </a>
+          </div>
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Tests' }">
+            <a href="#" (click)="navigateToTests(); $event.preventDefault()"
+              [ngClass]="{ 'active-link': currentPage === 'Tests' }">
+              <span *ngIf="currentPage === 'Tests'" class="active-indicator">|</span>
+              <span class="menu-text">Tests</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="right-content">
+          <div class="course-content">
+            <div class="student-grades-container">
+  <div class="grades-header">
+    <h2>
+      <i class="fas fa-medal"></i>
+      Điểm của tôi
+    </h2>
+
+    <div class="tabs">
+      <button
+        class="tab-btn"
+        [class.active]="activeTab === 'ALL'"
+        (click)="changeTab('ALL')">
+        Tất cả
+      </button>
+      <button
+        class="tab-btn"
+        [class.active]="activeTab === 'MULTIPLE_CHOICE'"
+        (click)="changeTab('MULTIPLE_CHOICE')">
+        Trắc nghiệm
+      </button>
+      <button
+        class="tab-btn"
+        [class.active]="activeTab === 'ESSAY'"
+        (click)="changeTab('ESSAY')">
+        Tự luận
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading state -->
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Đang tải điểm của bạn...</p>
+  </div>
+
+  <!-- Grades table -->
+  <div *ngIf="!isLoading" class="grades-table-container">
+    <div *ngIf="filteredGrades.length === 0" class="no-data">
+      <i class="fas fa-clipboard-list"></i>
+      <p>Bạn chưa có điểm nào</p>
+      <small>Hãy tham gia các bài kiểm tra để xem điểm ở đây</small>
+    </div>
+
+    <table *ngIf="filteredGrades.length > 0" class="table table-striped grades-table">
+      <thead>
+        <tr>
+          <th scope="col">
+            <i class="fas fa-book"></i>
+            Tên bài kiểm tra
+          </th>
+          <th scope="col">
+            <i class="fas fa-clipboard-question"></i>
+            Loại bài
+          </th>
+          <th scope="col">
+            <i class="fas fa-star"></i>
+            Điểm số
+          </th>
+          <th scope="col">
+            <i class="fas fa-percentage"></i>
+            Phần trăm
+          </th>
+          <th scope="col">
+            <i class="fas fa-info-circle"></i>
+            Trạng thái
+          </th>
+          <th scope="col">
+            <i class="fas fa-clock"></i>
+            Ngày nộp
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let grade of filteredGrades" class="grade-row">
+          <td class="quiz-name">
+            <div class="quiz-title">
+              <strong>{{ grade.quizTitle }}</strong>
+              <div *ngIf="grade.feedback" class="feedback-indicator" title="Có nhận xét từ giảng viên">
+                <i class="fas fa-comment-alt"></i>
+                <span class="feedback-text">Có nhận xét</span>
+              </div>
+            </div>
+          </td>
+          <td class="quiz-type">
+            <span class="badge" [class.badge-essay]="grade.quizType === 'ESSAY'" [class.badge-choice]="grade.quizType !== 'ESSAY'">
+              {{ grade.quizType === 'ESSAY' ? 'Tự luận' : 'Trắc nghiệm' }}
+            </span>
+          </td>
+          <td class="score-cell">
+            <div class="score-display" [class]="getScoreClass(grade.score, grade.maxScore)">
+              <span class="score-value">{{ getCorrectAnswers(grade) }}</span>
+              <span class="score-separator">/</span>
+              <span class="max-score-value">{{ grade.maxScore }}</span>
+            </div>
+          </td>
+          <td class="percentage-cell">
+            <div class="percentage-display" [class]="getScoreClass(grade.score, grade.maxScore)">
+              {{ getPercentage(grade).toFixed(1) }}%
+            </div>
+          </td>
+          <td class="status-cell">
+            <span class="status-badge" [class]="getStatusBadgeClass(grade.status)">
+              {{ grade.status === 'COMPLETED' ? 'Hoàn thành' :
+                 grade.status === 'PENDING_GRADE' ? 'Chờ chấm điểm' : 'Chưa nộp' }}
+            </span>
+          </td>
+          <td class="date-cell">
+            {{ formatDate(grade.submittedAt) }}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Essay Submission Modal -->
+  <div
+    *ngIf="selectedSubmission"
+    class="modal fade"
+    [class.show]="selectedSubmission"
+    tabindex="-1"
+    role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="fas fa-file-alt"></i>
+            Chi tiết bài làm: {{ selectedSubmission.quizTitle }}
+          </h5>
+          <button
+            type="button"
+            class="btn-close"
+            (click)="closeEssayModal()"
+            aria-label="Close">
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <!-- Loading state -->
+          <div *ngIf="isLoadingSubmission" class="text-center">
+            <div class="spinner-border" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <p>Đang tải chi tiết bài làm...</p>
+          </div>
+
+          <!-- Submission details -->
+          <div *ngIf="!isLoadingSubmission && selectedSubmission">
+            <!-- Summary -->
+            <div class="submission-summary">
+              <div class="row">
+                <div class="col-md-3 col-6">
+                  <strong>Ngày nộp</strong><br>
+                  <span>{{ formatDate(selectedSubmission.submittedAt) }}</span>
+                </div>
+                <div class="col-md-3 col-6">
+                  <strong>Tổng số câu</strong><br>
+                  <span>{{ selectedSubmission.totalQuestions }}</span>
+                </div>
+                <div class="col-md-3 col-6">
+                  <strong>Điểm số</strong><br>
+                  <span [class]="selectedSubmission.isFullyGraded ? 'text-success' : 'text-warning'">
+                    {{ getEssayScoreDisplay(selectedSubmission) }}
+                  </span>
+                </div>
+                <div class="col-md-3 col-6">
+                  <strong>Phần trăm</strong><br>
+                  <span [class]="selectedSubmission.isFullyGraded ? 'text-success' : 'text-warning'">
+                    {{ getEssayPercentage(selectedSubmission).toFixed(1) }}%
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Questions and answers -->
+            <div class="questions-answers">
+              <div
+                *ngFor="let question of selectedSubmission.questions; let i = index"
+                class="question-block">
+
+                <div class="question-header">
+                  <h5>
+                    <span *ngIf="selectedSubmission.questions.length > 1">Câu {{ i + 1 }}: </span><strong>Câu hỏi: </strong>{{ question.questionText }}
+                  </h5>
+                </div>
+
+                <div class="answer-section">
+                  <ng-container *ngIf="getAnswerForQuestion(question.questionId) as answer">
+                    <div class="student-answer">
+                      <strong>Bài làm của bạn:</strong>
+                      <div class="answer-content">
+                        <!-- Check if any answer exists -->
+                        <div *ngIf="!answer.answerText && !answer.linkAnswer && !answer.fileName" class="no-content">
+                          <em class="text-muted">Bạn chưa trả lời câu hỏi này</em>
+                        </div>
+
+                        <div *ngIf="answer.answerText" class="text-answer">
+                          {{ answer.answerText }}
+                        </div>
+                        <div *ngIf="answer.linkAnswer" class="link-answer">
+                          <a [href]="answer.linkAnswer" target="_blank" rel="noopener noreferrer">
+                            {{ answer.linkAnswer }}
+                          </a>
+                        </div>
+                        <div *ngIf="answer.fileName" class="file-answer">
+                          <i class="fas fa-file-download"></i>
+                          <span>{{ answer.fileName }}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Grading info -->
+                    <div class="grading-info">
+                      <div class="row">
+                        <div class="col-md-6">
+                          <strong>Điểm số:</strong>
+                          <span
+                            *ngIf="answer.manualScore !== null && answer.manualScore !== undefined"
+                            [class]="answer.manualScore > 0 ? 'text-success' : 'text-danger'">
+                            {{ answer.manualScore }}/1 điểm
+                          </span>
+                          <span *ngIf="answer.manualScore === null || answer.manualScore === undefined" class="text-warning">
+                            Chưa chấm điểm
+                          </span>
+                        </div>
+                        <div class="col-md-6">
+                          <strong>Trạng thái:</strong>
+                          <span
+                            *ngIf="answer.manualScore !== null && answer.manualScore !== undefined"
+                            [class]="answer.manualScore > 0 ? 'text-success' : 'text-danger'">
+                            {{ answer.manualScore > 0 ? 'Đạt' : 'Không đạt' }}
+                          </span>
+                          <span *ngIf="answer.manualScore === null || answer.manualScore === undefined" class="text-warning">
+                            Đang chờ
+                          </span>
+                        </div>
+                      </div>
+
+                      <div *ngIf="answer.instructorFeedback" class="feedback">
+                        <strong>Nhận xét từ giảng viên:</strong><br>
+                        {{ answer.instructorFeedback }}
+                      </div>
+                      <div *ngIf="!answer.instructorFeedback && answer.manualScore !== null" class="feedback">
+                        <em class="text-muted">Giảng viên chưa để lại nhận xét cho câu này.</em>
+                      </div>
+                    </div>
+                  </ng-container>
+
+                  <div *ngIf="!getAnswerForQuestion(question.questionId)" class="no-answer">
+                    <em>Không có bài làm cho câu hỏi này</em>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="closeEssayModal()">
+            <i class="fas fa-times"></i>
+            Đóng
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal backdrop -->
+  <div
+    *ngIf="selectedSubmission"
+    class="modal-backdrop fade"
+    [class.show]="selectedSubmission"
+    (click)="closeEssayModal()">
+  </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>

@@ -1,0 +1,230 @@
+<<div class="courses-layout">
+  <!-- Notification Component -->
+  <app-notification></app-notification>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" role="complementary" aria-label="Sidebar navigation">
+    <app-sidebar-wrapper></app-sidebar-wrapper>
+  </aside>
+
+  <!-- Main content -->
+  <div class="courses-content">
+    <!-- Profile component -->
+    <div class="profile-header">
+      <app-profile 
+        [username]="username"
+        [role]="getDisplayRole(userRole)"
+        [avatarUrl]="avatarUrl"
+        (profileUpdate)="onProfileUpdate()"
+        (logout)="onLogout()">
+      </app-profile>
+    </div>
+
+    <!-- Header -->
+    <div class="header">
+      <h1 class="title">Đánh giá khóa học</h1>
+      <p class="subtitle" *ngIf="username">
+        Xin chào, {{ username }}
+        <span *ngIf="sessionService.isInstructor()">(Giảng viên)</span>
+        <span *ngIf="sessionService.isStudent()">(Sinh viên)</span>
+        <span *ngIf="sessionService.isAdmin()">(Quản trị viên)</span>
+      </p>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loading" class="loading">
+      <p>Đang tải...</p>
+    </div>
+
+    <!-- Student View: Eligible Courses -->
+    <div *ngIf="sessionService.isStudent() && !loading" class="student-section">
+      <div class="section-header card">
+        <h2>Khóa học có thể đánh giá</h2>
+        <p>Các khóa học bạn đã hoàn thành trên {{ MIN_COMPLETION_PERCENTAGE }}%</p>
+      </div>
+
+      <div class="courses-grid" *ngIf="eligibleCourses.length > 0">
+        <div class="course-card card" *ngFor="let course of eligibleCourses">
+          <img [src]="getImageUrl(course.courseImage)" alt="Course Image" class="course-image">
+          <div class="course-content">
+            <h3>{{ course.courseTitle }}</h3>
+            <p>{{ course.description }}</p>
+            
+            <!-- Completion progress -->
+            <div class="completion-info">
+              <div class="progress-bar">
+                <div class="progress-fill" [style.width.%]="getCompletionPercentage(course.courseId)"></div>
+              </div>
+              <span class="completion-text">{{ getCompletionPercentage(course.courseId).toFixed(1) }}% hoàn thành</span>
+              
+              <!-- Completion details -->
+              <div class="completion-details" *ngIf="getCompletionDetails(course.courseId) as details">
+                <small>
+                  {{ details.completedItems }}/{{ details.totalItems }} mục đã hoàn thành
+                  ({{ details.completedModules }}/{{ details.totalModules }} module)
+                </small>
+              </div>
+            </div>
+            
+            <div class="course-actions">
+              <button class="btn btn-primary" (click)="selectCourse(course)">
+                Xem đánh giá
+              </button>
+              <button *ngIf="!course.hasReviewed && canReviewCourse(course)" 
+                      class="btn btn-success" 
+                      (click)="openReviewForm(course)">
+                Đánh giá ngay
+              </button>
+              <button *ngIf="!course.hasReviewed && !canReviewCourse(course)" 
+                      class="btn btn-secondary" 
+                      disabled
+                      title="Cần hoàn thành ít nhất {{ MIN_COMPLETION_PERCENTAGE }}% để đánh giá">
+                Chưa đủ điều kiện
+              </button>
+              <span *ngIf="course.hasReviewed" class="badge reviewed">Đã đánh giá</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="eligibleCourses.length === 0" class="no-courses card">
+        <div class="empty-state">
+          <i class="fas fa-graduation-cap"></i>
+          <h3>Chưa có khóa học nào đủ điều kiện đánh giá</h3>
+          <p>Hãy hoàn thành ít nhất {{ MIN_COMPLETION_PERCENTAGE }}% nội dung khóa học để có thể đánh giá.</p>
+          <small>Tiến độ học tập được tính dựa trên việc hoàn thành các module, video và bài kiểm tra.</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Instructor/Admin View: Reviews -->
+    <div *ngIf="(sessionService.isInstructor() || sessionService.isAdmin()) && !loading" class="reviews-section">
+      <div class="section-header card">
+        <h2 *ngIf="sessionService.isInstructor()">Đánh giá các khóa học của bạn</h2>
+        <h2 *ngIf="sessionService.isAdmin()">Tất cả đánh giá</h2>
+      </div>
+
+      <div class="reviews-list" *ngIf="courseReviews.length > 0">
+        <div class="review-item card" *ngFor="let review of courseReviews">
+          <div class="review-header">
+            <img [src]="getAvatarUrl(review.avatarUrl)" alt="Avatar" class="reviewer-avatar">
+            <div class="reviewer-info">
+              <strong>{{ review.fullName }}</strong>
+              <span class="review-date">{{ review.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+            </div>
+            <div class="course-title">{{ review.courseTitle }}</div>
+            <button *ngIf="sessionService.isAdmin()" class="btn btn-danger btn-sm" (click)="deleteReview(review.reviewId!)">
+              Xóa
+            </button>
+          </div>
+          <div class="rating">
+            <i class="fa fa-star" 
+               *ngFor="let star of getStarArray(review.rating)" 
+               [class.filled]="isStarFilled(star, review.rating)">
+            </i>
+            <span>{{ review.rating }}.0</span>
+          </div>
+          <p class="review-comment" *ngIf="review.comment">{{ review.comment }}</p>
+        </div>
+      </div>
+
+      <div *ngIf="courseReviews.length === 0" class="no-reviews card">
+        <p *ngIf="sessionService.isInstructor()">Chưa có đánh giá nào cho các khóa học của bạn.</p>
+        <p *ngIf="sessionService.isAdmin()">Chưa có đánh giá nào trong hệ thống.</p>
+      </div>
+    </div>
+
+    <!-- Selected Course Reviews (for Students) -->
+    <div *ngIf="selectedCourse && sessionService.isStudent()" class="selected-course-reviews">
+      <div class="course-header card">
+        <img [src]="getImageUrl(selectedCourse.courseImage)" alt="Course Image" class="course-image">
+        <div>
+          <h2>{{ selectedCourse.courseTitle }}</h2>
+          <button class="btn btn-secondary" (click)="selectedCourse = null">← Quay lại</button>
+        </div>
+      </div>
+
+      <!-- My Review -->
+      <div *ngIf="myReview" class="my-review card">
+        <h3>Đánh giá của bạn</h3>
+        <div class="review-content">
+          <div class="rating">
+            <i class="fa fa-star" 
+               *ngFor="let star of getStarArray(myReview.rating)" 
+               [class.filled]="isStarFilled(star, myReview.rating)">
+            </i>
+            <span>{{ myReview.rating }}.0</span>
+          </div>
+          <p *ngIf="myReview.comment">{{ myReview.comment }}</p>
+          <button class="btn btn-primary" (click)="openReviewForm(selectedCourse)">
+            <i class="fa fa-pencil"></i> Chỉnh sửa đánh giá
+          </button>
+        </div>
+      </div>
+
+      <!-- All Reviews -->
+      <div class="all-reviews">
+        <h3>Tất cả đánh giá ({{ courseReviews.length }})</h3>
+        <div class="reviews-list" *ngIf="courseReviews.length > 0">
+          <div class="review-item card" *ngFor="let review of courseReviews">
+            <div class="review-header">
+              <img [src]="getAvatarUrl(review.avatarUrl)" alt="Avatar" class="reviewer-avatar">
+              <div class="reviewer-info">
+                <strong>{{ review.fullName }}</strong>
+                <span class="review-date">{{ review.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+            </div>
+            <div class="rating">
+              <i class="fa fa-star" 
+                 *ngFor="let star of getStarArray(review.rating)" 
+                 [class.filled]="isStarFilled(star, review.rating)">
+              </i>
+              <span>{{ review.rating }}.0</span>
+            </div>
+            <p class="review-comment" *ngIf="review.comment">{{ review.comment }}</p>
+          </div>
+        </div>
+        <div *ngIf="courseReviews.length === 0" class="no-reviews">
+          <p>Chưa có đánh giá nào cho khóa học này.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Review Form Modal -->
+    <div *ngIf="showReviewForm" class="modal-overlay" (click)="cancelReview()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <h3>{{ isEditing ? 'Chỉnh sửa đánh giá' : 'Đánh giá khóa học' }}</h3>
+        
+        <div class="form-group">
+          <label>Đánh giá của bạn:</label>
+          <div class="rating-input">
+            <i class="fa fa-star" 
+               *ngFor="let star of getStarArray(5)" 
+               [class.filled]="isStarFilled(star, reviewForm.rating)"
+               [class.selectable]="true"
+               (click)="setRating(star)">
+            </i>
+            <span>{{ reviewForm.rating }}.0</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="comment">Nhận xét (tùy chọn):</label>
+          <textarea 
+            id="comment"
+            [(ngModel)]="reviewForm.comment" 
+            placeholder="Chia sẻ trải nghiệm của bạn về khóa học này..."
+            rows="4">
+          </textarea>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn btn-secondary" (click)="cancelReview()">Hủy</button>
+          <button class="btn btn-primary" (click)="submitReview()" [disabled]="loading">
+            {{ isEditing ? 'Cập nhật' : 'Gửi đánh giá' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

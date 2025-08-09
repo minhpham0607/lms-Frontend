@@ -1,0 +1,840 @@
+<div class="participant-statistics-container">
+  <!-- Admin Sidebar -->
+  <app-sidebaradmin *ngIf="isAdmin"></app-sidebaradmin>
+  
+  <!-- Instructor Sidebar -->
+  <app-sidebar *ngIf="isInstructor"></app-sidebar>
+  
+  <main class="main-content">
+    <div class="header">
+      <div>
+        <h1>{{ isInstructor ? 'Thống kê khóa học của tôi' : 'Thống kê người tham gia khóa học' }}</h1>
+        <div class="data-source-info">
+          <span class="data-source-badge" 
+                [class.real-data]="isUsingRealData && !loading && !error" 
+                [class.mock-data]="!isUsingRealData && !loading && !error"
+                [class.loading-data]="loading"
+                [class.error-data]="error && !loading">
+            <i class="fas" 
+               [class.fa-database]="isUsingRealData && !loading && !error" 
+               [class.fa-exclamation-triangle]="(!isUsingRealData && !loading && !error) || (error && !loading)"
+               [class.fa-spinner]="loading"
+               [class.fa-spin]="loading"></i>
+            {{ dataSource }}
+          </span>
+          <span class="user-role-badge" [class]="userRole">
+            <i class="fas" 
+               [class.fa-user-shield]="isAdmin"
+               [class.fa-chalkboard-teacher]="isInstructor"></i>
+            {{ isAdmin ? 'Quản trị viên' : 'Giảng viên' }}
+          </span>
+        </div>
+      </div>
+      <app-profile 
+        [username]="username" 
+        [avatarUrl]="avatarUrl"
+        (profileUpdate)="onProfileUpdate()"
+        (logout)="onLogout()">
+      </app-profile>
+    </div>
+
+    <!-- API Error Notice -->
+    <div class="api-error-notice" *ngIf="error && !loading">
+      <div class="error-icon">
+        <i class="fas fa-exclamation-triangle"></i>
+      </div>
+      <div class="error-content">
+        <h4>Lỗi kết nối API</h4>
+        <p>{{ error }}</p>
+        <div class="error-actions">
+          <button class="btn btn-primary" (click)="refreshData()" [disabled]="loading">
+            <i class="fas fa-refresh"></i>
+            Thử lại
+          </button>
+          <button class="btn btn-secondary" (click)="debugAPIConnectivity()" [disabled]="loading">
+            <i class="fas fa-bug"></i>
+            Debug API
+          </button>
+          <button class="btn btn-secondary" (click)="retryWithFreshAuth()" [disabled]="loading">
+            <i class="fas fa-key"></i>
+            Làm mới Auth
+          </button>
+          <button class="btn btn-secondary" onclick="window.open('http://localhost:8080', '_blank')">
+            <i class="fas fa-external-link-alt"></i>
+            Mở API Server
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="content" *ngIf="!loading; else loadingTemplate" id="participant-content">
+      <!-- View Navigation -->
+      <div class="view-navigation" *ngIf="isInstructor">
+        <div class="nav-tabs">
+          <button class="nav-tab active">
+            <i class="fas fa-chart-bar"></i>
+            Thống kê khóa học của tôi
+          </button>
+        </div>
+      </div>
+
+      <!-- Admin Navigation -->
+      <div class="view-navigation" *ngIf="isAdmin">
+        <div class="nav-tabs">
+          <button class="nav-tab active">
+            <i class="fas fa-chart-pie"></i>
+            Tổng quan hệ thống
+          </button>
+        </div>
+      </div>
+      <!-- Main Statistics Cards -->
+      <div class="main-statistics">
+        <div class="stat-card total-participants">
+          <div class="stat-icon">
+            <i class="fas fa-users"></i>
+          </div>
+          <div class="stat-info">
+            <h3>{{ statistics.totalParticipants }}</h3>
+            <p>Tổng người tham gia</p>
+          </div>
+        </div>
+
+        <div class="stat-card average-per-course">
+          <div class="stat-icon">
+            <i class="fas fa-chart-line"></i>
+          </div>
+          <div class="stat-info">
+            <h3>{{ statistics.averagePerCourse }}</h3>
+            <p>{{ isInstructor && !isAdmin ? 'TB/khóa học của tôi' : 'Trung bình/khóa học' }}</p>
+            <small class="stat-detail" *ngIf="isInstructor && !isAdmin">
+              ({{ courses.length }} khóa học)
+            </small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Time-based Statistics Cards -->
+      <div class="time-statistics">
+        <div class="stat-card today" (click)="filterByToday()" [class.active]="selectedTimeFilter === 'today'">
+          <div class="stat-icon">
+            <i class="fas fa-calendar-day"></i>
+          </div>
+          <div class="stat-info">
+            <h3>{{ statistics.todayEnrollments }}</h3>
+            <p>Đăng ký hôm nay</p>
+          </div>
+        </div>
+
+        <div class="stat-card week" (click)="filterByThisWeek()" [class.active]="selectedTimeFilter === 'thisWeek'">
+          <div class="stat-icon">
+            <i class="fas fa-calendar-week"></i>
+          </div>
+          <div class="stat-info">
+            <h3>{{ statistics.thisWeekEnrollments }}</h3>
+            <p>Đăng ký tuần này</p>
+          </div>
+        </div>
+
+        <div class="stat-card month" (click)="filterByThisMonth()" [class.active]="selectedTimeFilter === 'thisMonth'">
+          <div class="stat-icon">
+            <i class="fas fa-calendar-alt"></i>
+          </div>
+          <div class="stat-info">
+            <h3>{{ statistics.thisMonthEnrollments }}</h3>
+            <p>Đăng ký tháng này</p>
+          </div>
+        </div>
+
+        <div class="stat-card year" (click)="filterByThisYear()" [class.active]="selectedTimeFilter === 'thisYear'">
+          <div class="stat-icon">
+            <i class="fas fa-calendar"></i>
+          </div>
+          <div class="stat-info">
+            <h3>{{ statistics.thisYearEnrollments }}</h3>
+            <p>Đăng ký năm này</p>
+          </div>
+        </div>
+
+        <div class="stat-card total" (click)="filterByTotal()" [class.active]="!selectedTimeFilter && !searchTerm && !selectedCourse && !selectedCategory">
+          <div class="stat-icon">
+            <i class="fas fa-list"></i>
+          </div>
+          <div class="stat-info">
+            <h3>{{ statistics.totalParticipants }}</h3>
+            <p>Tất cả đăng ký</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Courses Section -->
+      <div class="top-courses-section">
+        <h3 class="section-title">
+          <i class="fas fa-trophy"></i>
+          Top khóa học được đăng ký nhiều nhất
+        </h3>
+        
+        <div class="top-courses-grid">
+          <div 
+            *ngFor="let course of statistics.topCourses.slice(0, 5); let i = index" 
+            class="course-card clickable"
+            [class]="'rank-' + (i + 1)"
+            (click)="showCourseParticipants(course)"
+            [title]="'Click để xem danh sách người tham gia'"
+          >
+            <div class="rank-badge">{{ i + 1 }}</div>
+            <div class="course-info">
+              <h4>{{ course.title }}</h4>
+              <p class="enrollment-count">
+                <i class="fas fa-user-plus"></i>
+                {{ course.enrollmentCount }} người tham gia
+              </p>
+              <p class="category">Danh mục {{ course.categoryId }}</p>
+              <div class="click-hint">
+                <i class="fas fa-mouse-pointer"></i>
+                Click để xem chi tiết
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Instructor Detailed Statistics (only for instructors) -->
+      <div class="instructor-detailed-stats" *ngIf="isInstructor && !isAdmin && instructorStats.totalMyCourses > 0">
+        <h3 class="section-title">
+          <i class="fas fa-chart-bar"></i>
+          Thống kê chi tiết khóa học của tôi
+        </h3>
+        
+        <div class="detailed-stats-grid">
+          <div class="detailed-stat-card clickable" (click)="showCourseStatistics('total', 'Tất cả khóa học của tôi')">
+            <div class="stat-icon courses-total">
+              <i class="fas fa-book"></i>
+            </div>
+            <div class="stat-content">
+              <h4>{{ instructorStats.totalMyCourses }}</h4>
+              <p>Tổng khóa học</p>
+              <small class="click-hint">Click để xem danh sách</small>
+            </div>
+          </div>
+
+          <div class="detailed-stat-card clickable" (click)="showCourseStatistics('withStudents', 'Khóa học có học viên')">
+            <div class="stat-icon courses-active">
+              <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-content">
+              <h4>{{ instructorStats.coursesWithStudents }}</h4>
+              <p>Khóa học có học viên</p>
+              <small class="click-hint">Click để xem danh sách</small>
+            </div>
+          </div>
+
+          <div class="detailed-stat-card clickable" (click)="showCourseStatistics('withoutStudents', 'Khóa học chưa có học viên')">
+            <div class="stat-icon courses-empty">
+              <i class="fas fa-user-slash"></i>
+            </div>
+            <div class="stat-content">
+              <h4>{{ instructorStats.coursesWithoutStudents }}</h4>
+              <p>Khóa học chưa có học viên</p>
+              <small class="click-hint">Click để xem danh sách</small>
+            </div>
+          </div>
+
+          <div class="detailed-stat-card">
+            <div class="stat-icon average-students">
+              <i class="fas fa-calculator"></i>
+            </div>
+            <div class="stat-content">
+              <h4>{{ instructorStats.averageStudentsPerCourse }}</h4>
+              <p>Trung bình học viên/khóa học</p>
+            </div>
+          </div>
+
+          <div class="detailed-stat-card clickable" (click)="showCourseStatistics('maxStudents', 'Khóa học có nhiều học viên nhất')">
+            <div class="stat-icon max-students">
+              <i class="fas fa-arrow-up"></i>
+            </div>
+            <div class="stat-content">
+              <h4>{{ instructorStats.maxStudentsInCourse }}</h4>
+              <p>Nhiều học viên nhất</p>
+              <small class="click-hint">Click để xem khóa học</small>
+            </div>
+          </div>
+
+          <div class="detailed-stat-card clickable" (click)="showCourseStatistics('minStudents', 'Khóa học có ít học viên nhất')">
+            <div class="stat-icon min-students">
+              <i class="fas fa-arrow-down"></i>
+            </div>
+            <div class="stat-content">
+              <h4>{{ instructorStats.minStudentsInCourse }}</h4>
+              <p>Ít học viên nhất</p>
+              <small class="click-hint">Click để xem khóa học</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Popular Courses Info -->
+        <div class="popular-courses-info">
+          <div class="popular-course-item">
+            <div class="course-label">
+              <i class="fas fa-star text-success"></i>
+              <span>Khóa học phổ biến nhất:</span>
+            </div>
+            <div class="course-name">{{ instructorStats.mostPopularCourse }}</div>
+          </div>
+          
+          <div class="popular-course-item" *ngIf="instructorStats.totalMyCourses > 1">
+            <div class="course-label">
+              <i class="fas fa-star-half-alt text-warning"></i>
+              <span>Khóa học ít phổ biến nhất:</span>
+            </div>
+            <div class="course-name">{{ instructorStats.leastPopularCourse }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="action-buttons">
+        <button class="btn btn-primary" (click)="refreshData()" [disabled]="loading">
+          <i class="fas fa-refresh"></i>
+          Làm mới dữ liệu
+        </button>
+        
+        <button class="btn btn-secondary" (click)="testAuthentication()">
+          <i class="fas fa-shield-alt"></i>
+          Test Auth
+        </button>
+        
+        <button class="btn btn-secondary" (click)="debugAPIData()">
+          <i class="fas fa-bug"></i>
+          Debug Data
+        </button>
+        
+        <button class="btn btn-secondary" (click)="exportStatistics()">
+          <i class="fas fa-download"></i>
+          Xuất JSON
+        </button>
+      </div>
+
+      <!-- Charts Section -->
+      <div class="charts-section">
+        <!-- Monthly Enrollments Chart -->
+        <div class="chart-container monthly-enrollments">
+          <h3>Đăng ký theo tháng trong năm</h3>
+          <div class="chart">
+            <div class="chart-bars">
+              <div 
+                *ngFor="let item of monthlyEnrollments" 
+                class="bar-container"
+                [title]="item.label + ': ' + item.value + ' đăng ký'"
+              >
+                <div 
+                  class="bar monthly-bar"
+                  [style.height.%]="getBarHeight(item.value, getMaxValue(monthlyEnrollments))"
+                >
+                  <span class="bar-value">{{ item.value }}</span>
+                </div>
+                <span class="bar-label">{{ item.label.replace('Tháng ', '') }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Course Enrollments Chart -->
+        <div class="chart-container course-enrollments">
+          <h3>Top 10 khóa học có nhiều đăng ký nhất</h3>
+          <div class="chart">
+            <div class="chart-bars">
+              <div 
+                *ngFor="let item of courseEnrollments.slice(0, 10)" 
+                class="bar-container"
+                [title]="item.label + ': ' + item.value + ' đăng ký'"
+              >
+                <div 
+                  class="bar course-bar"
+                  [style.height.%]="getBarHeight(item.value, getMaxValue(courseEnrollments))"
+                >
+                  <span class="bar-value">{{ item.value }}</span>
+                </div>
+                <span class="bar-label">{{ item.label.length > 15 ? (item.label | slice:0:12) + '...' : item.label }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Category Enrollments Chart -->
+        <div class="chart-container category-enrollments">
+          <h3>Đăng ký theo danh mục</h3>
+          <div class="chart">
+            <div class="chart-bars">
+              <div 
+                *ngFor="let item of categoryEnrollments" 
+                class="bar-container"
+                [title]="item.label + ': ' + item.value + ' đăng ký'"
+              >
+                <div 
+                  class="bar category-bar"
+                  [style.height.%]="getBarHeight(item.value, getMaxValue(categoryEnrollments))"
+                >
+                  <span class="bar-value">{{ item.value }}</span>
+                </div>
+                <span class="bar-label">{{ item.label }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- All Enrollments Section with Pagination -->
+      <div class="all-enrollments-section">
+        <div class="section-header">
+          <h3>Tất cả đăng ký khóa học</h3>
+          <div class="total-count" *ngIf="totalEnrollments > 0">
+            <span class="count-badge">{{ totalEnrollments }}</span>
+            <span>{{ searchTerm || selectedCourse || selectedCategory ? 'kết quả' : 'đăng ký' }}</span>
+          </div>
+        </div>
+        
+        <!-- Active Filter Notice -->
+        <div class="active-filter-notice" *ngIf="selectedTimeFilter || selectedCourse || searchTerm || selectedCategory">
+          <i class="fas fa-filter"></i>
+          <span>Đang hiển thị đăng ký: 
+            <strong *ngIf="selectedTimeFilter">{{ getTimeFilterLabel() }}</strong>
+            <strong *ngIf="selectedCourse"> - Khóa học: {{ selectedCourse }}</strong>
+            <strong *ngIf="searchTerm"> - Tìm kiếm: "{{ searchTerm }}"</strong>
+            <strong *ngIf="selectedCategory"> - Danh mục: {{ selectedCategory }}</strong>
+            <span *ngIf="!selectedTimeFilter && !selectedCourse && !searchTerm && !selectedCategory">tất cả đăng ký</span>
+          </span>
+          <button class="btn-clear-filter" (click)="clearFilters()">
+            <i class="fas fa-times"></i> Xóa bộ lọc
+          </button>
+        </div>
+        
+        <!-- Filters and Search -->
+        <div class="filters-container">
+          <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input 
+              type="text" 
+              placeholder="Tìm kiếm theo tên khóa học, ID..." 
+              [(ngModel)]="searchTerm"
+              (input)="applyFilters()"
+            >
+          </div>
+          
+          <div class="filter-group">
+            <label>Khóa học:</label>
+            <select [(ngModel)]="selectedCourse" (change)="applyFilters()">
+              <option value="">Tất cả khóa học</option>
+              <option *ngFor="let course of courses" [value]="course.courseId">
+                {{ course.title }}
+              </option>
+            </select>
+          </div>
+          
+          <div class="filter-group">
+            <label>Danh mục:</label>
+            <select [(ngModel)]="selectedCategory" (change)="applyFilters()">
+              <option value="">Tất cả danh mục</option>
+              <option value="1">Danh mục 1</option>
+              <option value="2">Danh mục 2</option>
+              <option value="3">Danh mục 3</option>
+              <option value="4">Danh mục 4</option>
+              <option value="5">Danh mục 5</option>
+            </select>
+          </div>
+        </div>
+       
+        <!-- Results Info -->
+        <div class="results-info">
+          <span>Hiển thị {{ (currentPage - 1) * itemsPerPage + 1 }} - {{ getMaxDisplayed() }} của {{ totalEnrollments }} đăng ký</span>
+          
+          <div class="items-per-page">
+            <label>Hiển thị:</label>
+            <select [value]="itemsPerPage" (change)="changeItemsPerPage(+$any($event).target.value)">
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+            <span>mục/trang</span>
+          </div>
+        </div>
+
+        <!-- Enrollments Table -->
+        <div class="table-container">
+          <table class="enrollments-table">
+            <thead>
+              <tr>
+                <th class="sortable" (click)="sortBy('enrollmentId')" [class.active]="sortField === 'enrollmentId'">
+                  ID Đăng ký
+                  <i class="fas" [ngClass]="{
+                    'fa-sort': sortField !== 'enrollmentId',
+                    'fa-sort-up': sortField === 'enrollmentId' && sortDirection === 'asc',
+                    'fa-sort-down': sortField === 'enrollmentId' && sortDirection === 'desc'
+                  }"></i>
+                </th>
+                <th class="sortable" (click)="sortBy('userId')" [class.active]="sortField === 'userId'">
+                  ID Người dùng
+                  <i class="fas" [ngClass]="{
+                    'fa-sort': sortField !== 'userId',
+                    'fa-sort-up': sortField === 'userId' && sortDirection === 'asc',
+                    'fa-sort-down': sortField === 'userId' && sortDirection === 'desc'
+                  }"></i>
+                </th>
+                <th class="sortable" (click)="sortBy('courseTitle')" [class.active]="sortField === 'courseTitle'">
+                  Tên khóa học
+                  <i class="fas" [ngClass]="{
+                    'fa-sort': sortField !== 'courseTitle',
+                    'fa-sort-up': sortField === 'courseTitle' && sortDirection === 'asc',
+                    'fa-sort-down': sortField === 'courseTitle' && sortDirection === 'desc'
+                  }"></i>
+                </th>
+                <th class="sortable" (click)="sortBy('enrolledAt')" [class.active]="sortField === 'enrolledAt'">
+                  Ngày đăng ký
+                  <i class="fas" [ngClass]="{
+                    'fa-sort': sortField !== 'enrolledAt',
+                    'fa-sort-up': sortField === 'enrolledAt' && sortDirection === 'asc',
+                    'fa-sort-down': sortField === 'enrolledAt' && sortDirection === 'desc'
+                  }"></i>
+                </th>
+                <th>Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let enrollment of paginatedEnrollments">
+                <td>{{ enrollment.enrollmentId }}</td>
+                <td>{{ enrollment.userId }}</td>
+                <td class="course-title">{{ enrollment.courseTitle }}</td>
+                <td>{{ getFormattedDate(enrollment.enrolledAt) }}</td>
+                <td>
+                  <span class="status-badge status-active">
+                    Đang học
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          
+          <!-- Empty state -->
+          <div class="empty-state" *ngIf="paginatedEnrollments.length === 0 && !loading">
+            <i class="fas" [class.fa-user-plus]="!error" [class.fa-database]="error"></i>
+            <h4 *ngIf="!error">Không tìm thấy đăng ký</h4>
+            <h4 *ngIf="error">Không có dữ liệu</h4>
+            <p *ngIf="!error">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
+            <p *ngIf="error">Không thể tải dữ liệu từ API. Vui lòng kiểm tra kết nối hoặc khởi động server backend.</p>
+            <div *ngIf="error" class="empty-state-actions">
+              <button class="btn btn-primary" (click)="refreshData()" [disabled]="loading">
+                <i class="fas fa-refresh"></i>
+                Thử lại
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination-container" *ngIf="totalPages > 1">
+          <button 
+            class="pagination-btn" 
+            [disabled]="currentPage === 1" 
+            (click)="previousPage()"
+          >
+            <i class="fas fa-chevron-left"></i>
+            Trước
+          </button>
+          
+          <div class="page-numbers">
+            <button 
+              *ngFor="let page of getPageNumbers()" 
+              class="page-number"
+              [class.active]="page === currentPage"
+              (click)="goToPage(page)"
+            >
+              {{ page }}
+            </button>
+          </div>
+          
+          <button 
+            class="pagination-btn" 
+            [disabled]="currentPage === totalPages" 
+            (click)="nextPage()"
+          >
+            Sau
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading Template -->
+    <ng-template #loadingTemplate>
+      <div class="loading-container">
+        <div class="loading-spinner">
+          <i class="fas fa-spinner fa-spin"></i>
+        </div>
+        <p>Đang tải dữ liệu thống kê người tham gia...</p>
+      </div>
+    </ng-template>
+
+    <!-- Error State -->
+    <div class="error-container" *ngIf="error && !loading">
+      <div class="error-content">
+        <i class="fas fa-exclamation-triangle"></i>
+        <h3>Có lỗi xảy ra</h3>
+        <p>{{ error }}</p>
+        <button class="btn btn-primary" (click)="refreshData()">
+          <i class="fas fa-refresh"></i>
+          Thử lại
+        </button>
+      </div>
+    </div>
+  </main>
+  
+  <!-- Course Participants Modal -->
+  <div class="modal-overlay participants-modal" *ngIf="showParticipantsModal" (click)="closeCourseParticipantsModal()">>
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-section">
+          <div class="course-info" *ngIf="selectedCourseForParticipants">
+            <img [src]="getCourseImageUrl(selectedCourseForParticipants)" 
+                 [alt]="selectedCourseForParticipants.title"
+                 (error)="onImageError($event)"
+                 class="course-thumbnail-small">
+            <div class="course-details">
+              <h3>
+                <i class="fas fa-users"></i>
+                Danh sách người tham gia
+              </h3>
+              <h4>{{ selectedCourseForParticipants.title }}</h4>
+            </div>
+          </div>
+          <div class="fallback-title" *ngIf="!selectedCourseForParticipants">
+            <h3>
+              <i class="fas fa-users"></i>
+              Danh sách người tham gia
+            </h3>
+          </div>
+        </div>
+        <button class="close-btn" (click)="closeCourseParticipantsModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Loading State -->
+        <div class="loading-container" *ngIf="loadingParticipants">
+          <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Đang tải danh sách người tham gia...</p>
+          </div>
+        </div>
+
+        <!-- Error State -->
+        <div class="error-container" *ngIf="participantsError && !loadingParticipants">
+          <div class="error-content">
+            <i class="fas fa-exclamation-triangle"></i>
+            <p>{{ participantsError }}</p>
+            <button class="btn btn-primary" (click)="reloadCourseParticipants()">>
+              <i class="fas fa-refresh"></i>
+              Thử lại
+            </button>
+          </div>
+        </div>
+
+        <!-- Participants List -->
+        <div class="participants-container" *ngIf="!loadingParticipants && !participantsError">
+          <div class="participants-summary">
+            <div class="summary-card">
+              <i class="fas fa-users"></i>
+              <div class="summary-info">
+                <span class="number">{{ courseParticipants.length }}</span>
+                <span class="label">Tổng người tham gia</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- No participants message -->
+          <div class="empty-state" *ngIf="courseParticipants.length === 0">
+            <i class="fas fa-user-slash"></i>
+            <h4>Chưa có người tham gia</h4>
+            <p>Khóa học này chưa có học viên nào đăng ký.</p>
+          </div>
+
+          <!-- Participants table -->
+          <div class="participants-table-container" *ngIf="courseParticipants.length > 0">
+            <table class="participants-table">
+              <thead>
+                <tr>
+                  <th>STT</th>
+                  <th>Họ tên</th>
+                  <th>Email</th>
+                  <th>Username</th>
+                  <th>Ngày đăng ký</th>
+                  <th>Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let participant of courseParticipants; let i = index" class="participant-row">
+                  <td>{{ i + 1 }}</td>
+                  <td>
+                    <div class="participant-name">
+                      <div class="avatar-placeholder">
+                        <i class="fas fa-user"></i>
+                      </div>
+                      <div class="name-info">
+                        <span class="full-name">{{ participant.fullName || 'Chưa cập nhật' }}</span>
+                        <span class="user-id">ID: {{ participant.userId }}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="email">{{ participant.email || 'Chưa có email' }}</span>
+                  </td>
+                  <td>
+                    <span class="username">{{ participant.username || 'Chưa có username' }}</span>
+                  </td>
+                  <td>
+                    <span class="enrollment-date">{{ getFormattedDate(participant.enrolledAt) }}</span>
+                  </td>
+                  <td>
+                    <span class="status-badge" [class]="participant.status || 'active'">
+                      <i class="fas" 
+                         [class.fa-check-circle]="(participant.status || 'active') === 'active'"
+                         [class.fa-pause-circle]="(participant.status || 'active') === 'inactive'"
+                         [class.fa-times-circle]="(participant.status || 'active') === 'cancelled'">
+                      </i>
+                      {{ 
+                        (participant.status || 'active') === 'active' ? 'Đang học' : 
+                        (participant.status || 'active') === 'inactive' ? 'Tạm dừng' : 
+                        'Đã hủy' 
+                      }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeCourseParticipantsModal()">
+          <i class="fas fa-times"></i>
+          Đóng
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Course Statistics Modal -->
+  <div class="modal-overlay course-stats-modal" *ngIf="showCourseStatsModal" (click)="closeCourseStatsModal()">>
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>
+          <i class="fas fa-chart-bar"></i>
+          {{ selectedStatTitle }}
+        </h3>
+        <button class="close-btn" (click)="closeCourseStatsModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Loading State -->
+        <div class="loading-container" *ngIf="loadingCourseStats">
+          <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Đang tải danh sách khóa học...</p>
+          </div>
+        </div>
+
+        <!-- Error State -->
+        <div class="error-container" *ngIf="courseStatsError && !loadingCourseStats">
+          <div class="error-content">
+            <i class="fas fa-exclamation-triangle"></i>
+            <p>{{ courseStatsError }}</p>
+            <button class="btn btn-primary" (click)="showCourseStatistics(selectedStatType, selectedStatTitle)">
+              <i class="fas fa-refresh"></i>
+              Thử lại
+            </button>
+          </div>
+        </div>
+
+        <!-- Courses List -->
+        <div class="courses-container" *ngIf="!loadingCourseStats && !courseStatsError">
+          <div class="courses-summary">
+            <div class="summary-card">
+              <i class="fas fa-book"></i>
+              <div class="summary-info">
+                <span class="number">{{ courseStatsList.length }}</span>
+                <span class="label">Khóa học</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- No courses message -->
+          <div class="empty-state" *ngIf="courseStatsList.length === 0">
+            <i class="fas fa-book-open"></i>
+            <h4>Không có khóa học</h4>
+            <p>Không tìm thấy khóa học nào phù hợp với tiêu chí này.</p>
+          </div>
+
+          <!-- Courses grid -->
+          <div class="courses-grid" *ngIf="courseStatsList.length > 0">
+            <div *ngFor="let course of courseStatsList; let i = index" class="course-item">
+              <div class="course-thumbnail">
+                <img [src]="getCourseImageUrl(course)" 
+                     [alt]="course.title"
+                     (error)="onImageError($event)">
+                <div class="course-status" [class]="course.status">
+                  {{ course.status === 'active' ? 'Hoạt động' : 'Tạm dừng' }}
+                </div>
+              </div>
+              
+              <div class="course-details">
+                <div class="course-header">
+                  <h4>{{ course.title }}</h4>
+                  <span class="course-id">ID: {{ course.courseId }}</span>
+                </div>
+                
+                <p class="course-description">{{ course.description || 'Không có mô tả' }}</p>
+                
+                <div class="course-meta">
+                  <div class="meta-item">
+                    <i class="fas fa-users"></i>
+                    <span>{{ getCourseEnrollmentCount(course.courseId) }} học viên</span>
+                  </div>
+                  
+                  <div class="meta-item">
+                    <i class="fas fa-tag"></i>
+                    <span>Danh mục {{ course.categoryId }}</span>
+                  </div>
+                  
+                  <div class="meta-item">
+                    <i class="fas fa-dollar-sign"></i>
+                    <span>{{ course.price | number:'1.0-0' }}đ</span>
+                  </div>
+                </div>
+
+                <div class="course-actions">
+                  <button class="btn-action view-participants" 
+                          (click)="showCourseParticipants({courseId: course.courseId, title: course.title, enrollmentCount: getCourseEnrollmentCount(course.courseId), categoryId: course.categoryId})"
+                          [disabled]="getCourseEnrollmentCount(course.courseId) === 0">
+                    <i class="fas fa-users"></i>
+                    Xem học viên
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeCourseStatsModal()">
+          <i class="fas fa-times"></i>
+          Đóng
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

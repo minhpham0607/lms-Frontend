@@ -1,0 +1,562 @@
+// /* User Management Modal Styles with Scrolling */
+
+// /* Modal Overlay */
+// .edit-overlay {
+//   position: fixed;
+//   inset: 0;
+//   background: rgba(0, 0, 0, 0.75);
+//   z-index: 9999;
+//   display: flex;
+//   align-items: center;
+//   justify-content: center;
+//   padding: 1rem;
+//   overflow-y: auto;
+//   backdrop-filter: blur(8px);
+//   -webkit-backdrop-filter: blur(8px);
+// }
+
+// /* Modal Container */
+// .edit-modal {
+//   background: white;
+//   border-radius: 16px;
+//   box-shadow: 
+//     0 25px 50px -12px rgba(0, 0, 0, 0.4),
+//     0 0 0 1px rgba(255, 255, 255, 0.1),
+//     0 0 200px rgba(102, 126, 234, 0.15);
+//   width: 100%;
+//   max-width: 700px;
+//   max-height: 90vh;
+//   min-height: 60vh;
+//   display: flex;
+//   flex-direction: column;
+//   animation: modalSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+//   transform: translateZ(0);
+//   position: relative;
+//   z-index: 10000;
+// }
+
+// /* Modal Header */
+// .modal-header {
+//   display: flex;
+//   justify-content: space-between;
+//   align-items: center;
+//   padding: 1.5rem 2rem;
+//   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+//   color: white;
+//   border-radius: 16px 16px 0 0;
+//   box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+//   position: relative;
+//   flex-shrink: 0;
+  
+//   &::before {
+//     content: '';
+//     position: absolute;
+//     top: 0;
+//     left: 0;
+//     right: 0;
+//     bottom: 0;
+//     background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+//     animation: shimmer 3s infinite;
+//     border-radius: 16px 16px 0 0;
+//   }
+  
+//   .header-content {
+//     display: flex;
+//     align-items: center;
+//     gap: 1rem;
+//     position: relative;
+//     z-index: 1;
+//   }
+  
+//   .close-btn {
+//     background: rgba(255, 255, 255, 0.2);
+//     border: none;
+//     color: white;
+//     width: 44px;
+//     height: 44px;
+//     border-radius: 10px;
+//     cursor: pointer;
+//     display: flex;
+//     align-items: center;
+//     justify-content: center;
+//     transition: all 0.3s ease;
+//     font-size: 1.3rem;
+//     position: relative;
+//     z-index: 1;
+    
+//     &:hover {
+//       background: rgba(255, 255, 255, 0.3);
+//       transform: scale(1.05);
+//     }
+//   }
+// }
+
+// @keyframes shimmer {
+//   0% { transform: translateX(-100%); }
+//   100% { transform: translateX(100%); }
+// }
+
+// .header-icon {
+//   width: 3rem;
+//   height: 3rem;
+//   background: rgba(255, 255, 255, 0.25);
+//   border-radius: 12px;
+//   display: flex;
+//   align-items: center;
+//   justify-content: center;
+//   color: white;
+//   font-size: 1.5rem;
+//   box-shadow: 
+//     0 8px 20px rgba(0, 0, 0, 0.15),
+//     inset 0 1px 0 rgba(255, 255, 255, 0.2);
+//   position: relative;
+//   z-index: 1;
+// }
+
+// .modal-title {
+//   font-size: 1.4rem;
+//   font-weight: 800;
+//   margin: 0;
+//   color: white;
+//   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+//   position: relative;
+//   z-index: 1;
+// }
+
+// .modal-subtitle {
+//   font-size: 0.9rem;
+//   color: rgba(255, 255, 255, 0.9);
+//   margin: 0.25rem 0 0 0;
+//   font-weight: 400;
+//   position: relative;
+//   z-index: 1;
+// }
+
+// /* Scrollable Modal Body */
+// .modal-body {
+//   padding: 1.5rem 2rem;
+//   max-height: 65vh;
+//   overflow-y: auto;
+//   overflow-x: hidden;
+//   flex: 1;
+  
+//   /* Custom Scrollbar for Webkit browsers */
+//   &::-webkit-scrollbar {
+//     width: 10px;
+//   }
+  
+//   &::-webkit-scrollbar-track {
+//     background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+//     border-radius: 5px;
+//     margin: 8px 0;
+//     border: 1px solid #e2e8f0;
+//   }
+  
+//   &::-webkit-scrollbar-thumb {
+//     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+//     border-radius: 5px;
+//     border: 2px solid #f8fafc;
+//     box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+    
+//     &:hover {
+//       background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+//       box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+//     }
+    
+//     &:active {
+//       background: linear-gradient(135deg, #4c51bf 0%, #553c9a 100%);
+//     }
+//   }
+  
+//   &::-webkit-scrollbar-corner {
+//     background: #f8fafc;
+//   }
+  
+//   /* Firefox */
+//   scrollbar-width: auto;
+//   scrollbar-color: #667eea #f8fafc;
+// }
+
+// /* Form Sections */
+// .form-sections {
+//   display: flex;
+//   flex-direction: column;
+//   gap: 1.5rem;
+// }
+
+// .form-section {
+//   background: #ffffff;
+//   border-radius: 12px;
+//   padding: 1.5rem;
+//   border: 1px solid #e2e8f0;
+//   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+//   transition: all 0.3s ease;
+  
+//   &:hover {
+//     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+//     transform: translateY(-2px);
+//   }
+// }
+
+// .section-title {
+//   display: flex;
+//   align-items: center;
+//   gap: 0.75rem;
+//   font-size: 1.1rem;
+//   font-weight: 700;
+//   color: #2d3748;
+//   margin: 0 0 1.5rem 0;
+//   padding-bottom: 0.75rem;
+//   border-bottom: 2px solid #e2e8f0;
+//   position: relative;
+  
+//   &::after {
+//     content: '';
+//     position: absolute;
+//     bottom: -2px;
+//     left: 0;
+//     width: 50px;
+//     height: 2px;
+//     background: linear-gradient(135deg, #667eea, #764ba2);
+//     border-radius: 1px;
+//   }
+// }
+
+// .section-title i {
+//   color: #667eea;
+//   font-size: 1rem;
+//   padding: 8px;
+//   background: rgba(102, 126, 234, 0.1);
+//   border-radius: 8px;
+// }
+
+// /* Form Grid */
+// .form-grid {
+//   display: grid;
+//   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+//   gap: 1.5rem;
+// }
+
+// .form-group {
+//   display: flex;
+//   flex-direction: column;
+//   gap: 0.75rem;
+  
+//   &.full-width {
+//     grid-column: 1 / -1;
+//   }
+// }
+
+// .form-label {
+//   display: flex;
+//   align-items: center;
+//   gap: 0.5rem;
+//   font-weight: 600;
+//   color: #374151;
+//   font-size: 0.95rem;
+  
+//   i {
+//     color: #667eea;
+//     font-size: 0.9rem;
+//   }
+// }
+
+// .form-input {
+//   width: 100%;
+//   padding: 0.875rem 1rem;
+//   font-size: 0.95rem;
+//   border: 2px solid #e2e8f0;
+//   border-radius: 8px;
+//   background: white;
+//   transition: all 0.3s ease;
+//   color: #374151;
+//   font-family: inherit;
+  
+//   &:focus {
+//     border-color: #667eea;
+//     outline: none;
+//     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+//     transform: translateY(-1px);
+//   }
+  
+//   &::placeholder {
+//     color: #a0aec0;
+//     font-style: italic;
+//   }
+  
+//   &.form-select {
+//     cursor: pointer;
+//     background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+//     background-repeat: no-repeat;
+//     background-position: right 1rem center;
+//     background-size: 1rem;
+//     padding-right: 3rem;
+//   }
+// }
+
+// /* Modal Footer */
+// .modal-footer {
+//   display: flex;
+//   justify-content: space-between;
+//   align-items: center;
+//   padding: 1.5rem 2rem;
+//   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+//   border-top: 1px solid #e2e8f0;
+//   border-radius: 0 0 16px 16px;
+//   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
+//   flex-shrink: 0;
+// }
+
+// /* Buttons */
+// .btn-save {
+//   display: flex;
+//   align-items: center;
+//   gap: 0.75rem;
+//   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+//   color: white;
+//   padding: 1rem 2rem;
+//   border-radius: 12px;
+//   border: none;
+//   cursor: pointer;
+//   font-weight: 700;
+//   font-size: 0.9rem;
+//   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+//   box-shadow: 
+//     0 8px 25px rgba(16, 185, 129, 0.4),
+//     0 0 0 1px rgba(255, 255, 255, 0.1);
+//   text-transform: uppercase;
+//   letter-spacing: 0.5px;
+//   position: relative;
+//   overflow: hidden;
+  
+//   &::before {
+//     content: '';
+//     position: absolute;
+//     top: 0;
+//     left: -100%;
+//     width: 100%;
+//     height: 100%;
+//     background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+//     transition: left 0.5s;
+//   }
+  
+//   &:hover {
+//     background: linear-gradient(135deg, #059669 0%, #047857 100%);
+//     transform: translateY(-3px) scale(1.02);
+//     box-shadow: 
+//       0 15px 35px rgba(16, 185, 129, 0.5),
+//       0 0 0 1px rgba(255, 255, 255, 0.2);
+      
+//     &::before {
+//       left: 100%;
+//     }
+//   }
+// }
+
+// .btn-cancel {
+//   display: flex;
+//   align-items: center;
+//   gap: 0.75rem;
+//   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+//   color: #6b7280;
+//   padding: 1rem 2rem;
+//   border-radius: 12px;
+//   border: 2px solid #e2e8f0;
+//   cursor: pointer;
+//   font-weight: 700;
+//   font-size: 0.9rem;
+//   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+//   text-transform: uppercase;
+//   letter-spacing: 0.5px;
+//   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+//   position: relative;
+//   overflow: hidden;
+  
+//   &:hover {
+//     background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+//     border-color: #cbd5e1;
+//     color: #4a5568;
+//     transform: translateY(-3px) scale(1.02);
+//     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+//   }
+// }
+
+// .btn-delete {
+//   display: flex;
+//   align-items: center;
+//   gap: 0.75rem;
+//   background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+//   color: white;
+//   padding: 1rem 2rem;
+//   border-radius: 12px;
+//   border: none;
+//   cursor: pointer;
+//   font-weight: 700;
+//   font-size: 0.9rem;
+//   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+//   box-shadow: 
+//     0 8px 25px rgba(239, 68, 68, 0.4),
+//     0 0 0 1px rgba(255, 255, 255, 0.1);
+//   text-transform: uppercase;
+//   letter-spacing: 0.5px;
+//   position: relative;
+//   overflow: hidden;
+  
+//   &:hover {
+//     background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+//     transform: translateY(-3px) scale(1.02);
+//     box-shadow: 
+//       0 15px 35px rgba(239, 68, 68, 0.5),
+//       0 0 0 1px rgba(255, 255, 255, 0.2);
+//   }
+// }
+
+// .btn-group {
+//   display: flex;
+//   gap: 1rem;
+// }
+
+// /* Animation */
+// @keyframes modalSlideIn {
+//   0% {
+//     opacity: 0;
+//     transform: scale(0.8) translateY(-40px);
+//     filter: blur(4px);
+//   }
+//   50% {
+//     opacity: 0.8;
+//     transform: scale(0.95) translateY(-10px);
+//     filter: blur(1px);
+//   }
+//   100% {
+//     opacity: 1;
+//     transform: scale(1) translateY(0);
+//     filter: blur(0);
+//   }
+// }
+
+// /* Responsive Design */
+// @media (max-width: 768px) {
+//   .edit-overlay {
+//     padding: 0.5rem;
+//     align-items: flex-start;
+//     padding-top: 2rem;
+//   }
+  
+//   .edit-modal {
+//     max-width: 100%;
+//     max-height: 95vh;
+//     min-height: 70vh;
+//     border-radius: 12px;
+//     margin: 0;
+//   }
+  
+//   .modal-header {
+//     padding: 1rem 1.5rem;
+//     border-radius: 12px 12px 0 0;
+//   }
+  
+//   .modal-body {
+//     padding: 1rem 1.5rem;
+//     max-height: 60vh;
+//     min-height: 40vh;
+    
+//     &::-webkit-scrollbar {
+//       width: 8px;
+//     }
+//   }
+  
+//   .modal-footer {
+//     padding: 1rem 1.5rem;
+//     flex-direction: column-reverse;
+//     gap: 1rem;
+//     border-radius: 0 0 12px 12px;
+//   }
+  
+//   .btn-group {
+//     width: 100%;
+    
+//     .btn-save,
+//     .btn-cancel {
+//       flex: 1;
+//       justify-content: center;
+//       padding: 0.875rem 1.5rem;
+//     }
+//   }
+  
+//   .btn-delete {
+//     width: 100%;
+//     justify-content: center;
+//     padding: 0.875rem 1.5rem;
+//   }
+  
+//   .form-grid {
+//     grid-template-columns: 1fr;
+//     gap: 1rem;
+//   }
+  
+//   .header-icon {
+//     width: 2.5rem;
+//     height: 2.5rem;
+//     font-size: 1.25rem;
+//   }
+  
+//   .modal-title {
+//     font-size: 1.2rem;
+//   }
+  
+//   .modal-subtitle {
+//     font-size: 0.85rem;
+//   }
+  
+//   .form-sections {
+//     gap: 1rem;
+//   }
+  
+//   .form-section {
+//     padding: 1.25rem;
+//   }
+// }
+
+// /* Enhanced scroll indicators */
+// .modal-body {
+//   position: relative;
+  
+//   /* Fade effect at top when scrolled */
+//   &::before {
+//     content: '';
+//     position: absolute;
+//     top: 0;
+//     left: 0;
+//     right: 0;
+//     height: 20px;
+//     background: linear-gradient(to bottom, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0));
+//     pointer-events: none;
+//     z-index: 1;
+//     opacity: 0;
+//     transition: opacity 0.3s ease;
+//   }
+  
+//   /* Fade effect at bottom when scrollable */
+//   &::after {
+//     content: '';
+//     position: absolute;
+//     bottom: 0;
+//     left: 0;
+//     right: 0;
+//     height: 20px;
+//     background: linear-gradient(to top, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0));
+//     pointer-events: none;
+//     z-index: 1;
+//     opacity: 0;
+//     transition: opacity 0.3s ease;
+//   }
+  
+//   &.scrolled-top::before {
+//     opacity: 1;
+//   }
+  
+//   &.scrollable-bottom::after {
+//     opacity: 1;
+//   }
+// }
