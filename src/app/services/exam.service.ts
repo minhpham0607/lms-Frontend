@@ -128,12 +128,12 @@ export class ExamService {
     console.log('Making POST request to: /questions');
     console.log('ApiService will handle adding auth headers');
     console.log('==========================================');
-
+    
     const result = this.apiService.post('/questions', questionDto);
-
+    
     // Log the observable creation
     console.log('Observable created, returning to component');
-
+    
     return result;
   }
 

@@ -2,11 +2,11 @@
   <aside class="sidebar" role="complementary" aria-label="Sidebar navigation">
     <app-sidebar-wrapper></app-sidebar-wrapper>
   </aside>
-
+  
   <div class="main-content">
     <!-- Profile component -->
     <div class="profile-header">
-      <app-profile
+      <app-profile 
         [username]="username"
         [role]="getDisplayRole(userRole)"
         [avatarUrl]="avatarUrl"
@@ -80,12 +80,12 @@
           <h2>Your Grades</h2>
           <p>View your grades and performance in this course.</p>
         </div>
-
+        
         <!-- Add Exam Content -->
         <div class="course-content">
           <div class="form-container">
             <h2>Tạo Exam Mới</h2>
-
+            
             <form autocomplete="off" novalidate>
               <div>
                 <label for="exam-title">Tên đề thi *</label>
@@ -126,11 +126,18 @@
                       <span>Minutes</span>
                     </span>
                   </label>
-
+                  
                   <!-- Tùy chọn cho phép làm nhiều lần - áp dụng cho cả hai loại đề thi -->
                   <label>
                     <input type="checkbox" name="allowMultipleAttempts" [(ngModel)]="examData.allowMultipleAttempts" />
                     Cho phép làm bài nhiều lần
+                  </label>
+                  
+                  <!-- Số lần làm tối đa - chỉ hiển thị khi cho phép làm nhiều lần -->
+                  <label *ngIf="examData.allowMultipleAttempts" class="max-attempts-container">
+                    Số lần làm tối đa:
+                    <input type="number" name="maxAttempts" [(ngModel)]="examData.maxAttempts" min="1" max="10" />
+                    <small class="help-text">Mặc định: 2 lần</small>
                   </label>
 
                   <!-- Tùy chọn chỉ dành cho trắc nghiệm -->
@@ -152,7 +159,9 @@
 
             <div class="buttons-container">
               <button type="button" class="btn cancel" (click)="cancelExam()">Cancel</button>
-              <button type="button" class="btn save-publish" (click)="saveAndPublish()" [disabled]="!isFormValid() || isSaving">
+              <button type="button" class="btn save-publish" 
+                      (click)="saveAndPublish()" 
+                      [disabled]="!isFormValid() || isSaving">
                 {{ isSaving ? 'Saving...' : 'Save & Publish' }}
               </button>
               <button type="button" class="btn save" (click)="saveExam()" [disabled]="!isFormValid() || isSaving">
