@@ -1,7 +1,8 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { tap } from 'rxjs/operators';
+import { isPlatformBrowser } from '@angular/common';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -10,9 +11,11 @@ export class AuthService {
   private refreshTokenKey = 'refreshToken';
   private currentUserSubject = new BehaviorSubject<any>(null);
 
-  constructor(private http: HttpClient) {
-    // Load user from token on service init
-    this.loadUserFromToken();
+  constructor(private http: HttpClient, @Inject(PLATFORM_ID) private platformId: Object) {
+    // Load user from token on service init only in browser
+    if (isPlatformBrowser(this.platformId)) {
+      this.loadUserFromToken();
+    }
   }
 
   login(data: { username: string; password: string }): Observable<any> {
@@ -62,18 +65,30 @@ export class AuthService {
 
   // Token management
   getToken(): string | null {
+    if (!isPlatformBrowser(this.platformId)) {
+      return null;
+    }
     return localStorage.getItem(this.tokenKey);
   }
 
   setToken(token: string): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
     localStorage.setItem(this.tokenKey, token);
   }
 
   getRefreshToken(): string | null {
+    if (!isPlatformBrowser(this.platformId)) {
+      return null;
+    }
     return localStorage.getItem(this.refreshTokenKey);
   }
 
   setRefreshToken(token: string): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
     localStorage.setItem(this.refreshTokenKey, token);
   }
 
@@ -122,6 +137,11 @@ export class AuthService {
 
   // Load user info from token
   private loadUserFromToken(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      this.currentUserSubject.next(null);
+      return;
+    }
+
     const token = this.getToken();
     if (!token) {
       this.currentUserSubject.next(null);
@@ -138,6 +158,10 @@ export class AuthService {
 
   // Logout
   logout(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      this.currentUserSubject.next(null);
+      return;
+    }
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.refreshTokenKey);
     this.currentUserSubject.next(null);
