@@ -49,18 +49,9 @@ export class ProfileUpdateComponent implements OnInit {
       if (token) {
         try {
           const payload = JSON.parse(atob(token.split('.')[1]));
-          this.userId = payload.id || payload.userId || payload.sub; // Try multiple fields
-          
-          console.log('🔍 Token payload:', payload);
-          console.log('👤 User ID found:', this.userId);
-          
-          // Load user data from token first (fallback)
-          this.profileForm.patchValue({
-            username: payload.sub || '',
-            email: payload.email || '',
-            fullName: payload.fullName || payload.sub || ''
-          });
-          
+          this.userId = payload.id || payload.userId || payload.sub;
+          // ...existing code...
+          // KHÔNG lấy avatar từ token, chỉ lấy từ API
           this.currentUser = {
             userId: this.userId || 0,
             username: payload.sub || '',
@@ -68,10 +59,10 @@ export class ProfileUpdateComponent implements OnInit {
             fullName: payload.fullName || payload.sub || '',
             role: payload.role || 'student',
             verified: payload.verified || false,
-            avatarUrl: payload.avatarUrl || null
+            avatarUrl: null // luôn null để load từ API
           };
 
-          // Load fresh user data from API to get updated avatar
+          // Luôn load từ API để lấy avatar mới nhất
           this.loadUserFromAPI();
         } catch (error) {
           console.error('❌ Error decoding token:', error);
@@ -207,20 +198,28 @@ export class ProfileUpdateComponent implements OnInit {
       next: (response: any) => {
         console.log('✅ Update successful:', response);
         this.showAlert('Cập nhật hồ sơ thành công!');
-        
+
+        // Nếu backend trả về token mới, cập nhật lại token để avatarUrl mới được lấy từ token
+        if (response.token) {
+          localStorage.setItem('token', response.token);
+        }
+
         // Reload user data to get updated info including avatar
         if (this.userId) {
           this.userService.getUserById(this.userId).subscribe({
             next: (updatedUser: User) => {
               console.log('✅ Reloaded user data:', updatedUser);
-              
-              // Clear preview để force load avatar mới từ server
+
+              // Reset preview và file đã chọn trước khi cập nhật currentUser
               this.imagePreview = null;
               this.selectedFile = null;
-              
-              // Update current user
+
+              // Update current user với dữ liệu mới nhất (avatar mới)
               this.currentUser = updatedUser;
-              
+
+              // Force Angular cập nhật lại giao diện avatar
+              setTimeout(() => {}, 0);
+
               this.updateSuccess.emit(updatedUser);
               this.closeModal.emit();
               this.loading = false;
@@ -302,27 +301,17 @@ export class ProfileUpdateComponent implements OnInit {
   }
 
   getAvatarUrl(): string {
-    console.log('🖼️ Getting avatar URL:', {
-      hasImagePreview: !!this.imagePreview,
-      hasSelectedFile: !!this.selectedFile,
-      currentUserAvatar: this.currentUser?.avatarUrl
-    });
-    
-    // Chỉ dùng image preview khi đang chọn file mới
+    // Chỉ lấy avatar từ currentUser.avatarUrl (không lấy từ token)
     if (this.imagePreview && this.selectedFile) {
-      console.log('✅ Using image preview for new file');
       return this.imagePreview;
     }
-    
-    // Dùng avatar từ server
     if (this.currentUser?.avatarUrl) {
+      // Thêm query string ngẫu nhiên để tránh cache
       const processedUrl = this.avatarService.getValidAvatarUrl(this.currentUser.avatarUrl);
-      console.log('✅ Using server avatar:', processedUrl);
-      return processedUrl;
+      const bustCacheUrl = processedUrl + '?v=' + Date.now();
+      return bustCacheUrl;
     }
-    
-    // Fallback to default
-    console.log('❌ Using default avatar');
     return this.avatarService.getDefaultAvatarUrl();
   }
 }
+    

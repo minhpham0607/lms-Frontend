@@ -42,6 +42,23 @@ export class ProfileComponent implements OnInit {
 
     // Load user data từ API
     this.loadUserFromAPI();
+
+    // Lấy userId từ token và gọi API lấy avatar
+    let userId: number | null = null;
+    if (isPlatformBrowser(this.platformId)) {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          userId = payload.id || payload.userId || payload.sub;
+        } catch (e) {
+          userId = null;
+        }
+      }
+    }
+    if (userId) {
+      this.fetchAvatarFromAPI();
+    }
   }
 
   private loadUserFromAPI() {
@@ -119,6 +136,35 @@ export class ProfileComponent implements OnInit {
     }
   }
 
+  private fetchAvatarFromAPI() {
+    if (isPlatformBrowser(this.platformId)) {
+      fetch('http://localhost:8080/api/users/profile', {
+        credentials: 'include', // nếu cần gửi cookie/session
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+        }
+      })
+        .then(res => res.json())
+        .then(user => {
+          if (user.avatarUrl) {
+            const avatarUrl = this.avatarService.getValidAvatarUrl(user.avatarUrl) + '?v=' + Date.now();
+            this.avatarUrl = avatarUrl;
+            this.sessionService.setAvatarUrl(this.avatarUrl);
+            console.log('✅ Avatar loaded from profile API:', avatarUrl);
+          } else {
+            this.avatarUrl = this.avatarService.getDefaultAvatarUrl();
+            this.sessionService.setAvatarUrl(this.avatarUrl);
+            console.log('❌ No avatar in profile API, using default');
+          }
+        })
+        .catch(err => {
+          this.avatarUrl = this.avatarService.getDefaultAvatarUrl();
+          this.sessionService.setAvatarUrl(this.avatarUrl);
+          console.error('❌ Error fetching avatar from profile API:', err);
+        });
+    }
+  }
+
   private getDefaultAvatar(): string {
     return this.avatarService.getDefaultAvatarUrl();
   }
@@ -174,6 +220,4 @@ export class ProfileComponent implements OnInit {
   onAvatarError(event: any) {
     console.log('❌ Avatar failed to load, using default');
     event.target.src = this.avatarService.getDefaultAvatarUrl();
-  }
-
-}
+  }}
