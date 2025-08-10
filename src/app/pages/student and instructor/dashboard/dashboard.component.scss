@@ -9,6 +9,11 @@
   background: #f5f7fa;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   min-height: 100vh;
+
+  @media (max-width: 768px) {
+    margin-left: 60px;
+    padding: 1rem;
+  }
 }
 
 /* Profile header styling */

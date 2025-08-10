@@ -956,4 +956,16 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
     // Otherwise, prepend the API base URL
     return `http://localhost:8080${fileUrl}`;
   }
+
+  // Check if user is student
+  isStudent(): boolean {
+    return this.sessionService.isStudent();
+  }
+
+  // Navigate to video page
+  navigateToVideo(): void {
+    if (this.courseId) {
+      this.router.navigate(['/video-upload', this.courseId]);
+    }
+  }
 }

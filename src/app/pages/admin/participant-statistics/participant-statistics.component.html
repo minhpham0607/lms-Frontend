@@ -1,5 +1,16 @@
 <div class="participant-statistics-container">
-  <!-- Admin Sidebar -->
+  <!-- Adm              <button class="btn btn-warning" (click)="debugAPIData()" [disabled]="loading">
+            <i class="fas fa-bug"></i>
+            Debug API
+          </button>
+          <button class="btn btn-secondary" onclick="window.open('http://localhost:8080', '_blank')">
+            <i class="fas fa-external-link-alt"></i>
+            Mở API Server
+          </button>n class="btn btn-warning" (click)="debugAPIData()" [disabled]="loading">
+            <i class="fas fa-bug"></i>
+            Debug API
+          </button>
+          <button class="btn btn-secondary" onclick="window.open('http://localhost:8080', '_blank')">r -->
   <app-sidebaradmin *ngIf="isAdmin"></app-sidebaradmin>
   
   <!-- Instructor Sidebar -->
@@ -54,10 +65,6 @@
           <button class="btn btn-secondary" (click)="debugAPIConnectivity()" [disabled]="loading">
             <i class="fas fa-bug"></i>
             Debug API
-          </button>
-          <button class="btn btn-secondary" (click)="retryWithFreshAuth()" [disabled]="loading">
-            <i class="fas fa-key"></i>
-            Làm mới Auth
           </button>
           <button class="btn btn-secondary" onclick="window.open('http://localhost:8080', '_blank')">
             <i class="fas fa-external-link-alt"></i>
@@ -297,11 +304,6 @@
         <button class="btn btn-primary" (click)="refreshData()" [disabled]="loading">
           <i class="fas fa-refresh"></i>
           Làm mới dữ liệu
-        </button>
-        
-        <button class="btn btn-secondary" (click)="testAuthentication()">
-          <i class="fas fa-shield-alt"></i>
-          Test Auth
         </button>
         
         <button class="btn btn-secondary" (click)="debugAPIData()">

@@ -27,6 +27,11 @@
   flex-direction: column;
   min-height: 100vh;
   background: #e3e8ff;
+  
+  @media (max-width: 768px) {
+    margin-left: 60px;
+    padding: 1rem;
+  }
 }
 
 .profile-header {

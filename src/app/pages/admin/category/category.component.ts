@@ -23,8 +23,9 @@ export class CategoryComponent implements OnInit {
   searchDescription: string = '';
   categories: any[] = [];
 
-  showCreateForm = false;
+  showModal = false;
   isEditing = false;
+  isSubmitting = false;
   editId: number | null = null;
   
   // Thêm biến để kiểm tra role
@@ -185,16 +186,34 @@ export class CategoryComponent implements OnInit {
     });
   }
 
+  // Modal methods
+  openCreateModal(): void {
+    this.resetForm();
+    this.showModal = true;
+  }
+
+  closeModal(): void {
+    this.showModal = false;
+    this.resetForm();
+  }
+
   // 👉 Gọi khi ấn nút "Chỉnh sửa"
   editCategory(category: any): void {
     this.newCategory = { name: category.name, description: category.description };
     this.editId = category.categoryId;
     this.isEditing = true;
-    this.showCreateForm = true;
+    this.showModal = true;
   }
 
   // 👉 Gọi khi ấn "Lưu" hoặc "Cập nhật"
   submitCategory(): void {
+    if (!this.newCategory.name || !this.newCategory.description) {
+      this.showAlert('Vui lòng điền đầy đủ thông tin', 'warning');
+      return;
+    }
+
+    this.isSubmitting = true;
+
     if (this.isEditing && this.editId !== null) {
       // PUT: cập nhật danh mục
       this.http.put(`http://localhost:8080/api/categories/${this.editId}`, this.newCategory, {
@@ -202,12 +221,14 @@ export class CategoryComponent implements OnInit {
       }).subscribe({
         next: (res) => {
           this.showAlert(res, 'success');
-          this.resetForm();
+          this.closeModal();
           this.fetchCategories();
+          this.isSubmitting = false;
         },
         error: (err) => {
           this.showAlert('Cập nhật danh mục thất bại', 'error');
           console.error(err);
+          this.isSubmitting = false;
         }
       });
     } else {
@@ -216,46 +237,53 @@ export class CategoryComponent implements OnInit {
         responseType: 'text'
       }).subscribe({
         next: (res) => {
-          this.showAlert(res);
-          this.resetForm();
+          this.showAlert(res, 'success');
+          this.closeModal();
           this.fetchCategories();
+          this.isSubmitting = false;
         },
         error: (err) => {
-          this.showAlert('Tạo danh mục thất bại');
+          this.showAlert('Tạo danh mục thất bại', 'error');
           console.error(err);
+          this.isSubmitting = false;
         }
       });
     }
   }
-deleteCategory(): void {
-  if (this.editId === null) {
-    this.showAlert('Không tìm thấy ID danh mục để xóa.');
-    return;
+
+  confirmDelete(): void {
+    if (isPlatformBrowser(this.platformId) && confirm('Bạn có chắc chắn muốn xóa danh mục này?')) {
+      this.deleteCategory();
+    }
   }
 
-  if (isPlatformBrowser(this.platformId) && confirm('Bạn có chắc chắn muốn xóa danh mục này?')) {
+  deleteCategory(): void {
+    if (this.editId === null) {
+      this.showAlert('Không tìm thấy ID danh mục để xóa.', 'error');
+      return;
+    }
+
+    this.isSubmitting = true;
+    
     this.http.delete(`http://localhost:8080/api/categories/${this.editId}`, { responseType: 'text' })
       .subscribe({
         next: (res) => {
-          this.showAlert(res);
+          this.showAlert(res, 'success');
           this.fetchCategories();
-          this.cancelCreate();
+          this.closeModal();
+          this.isSubmitting = false;
         },
         error: (err) => {
           console.error('Lỗi khi xóa:', err);
-          this.showAlert('Xóa thất bại.');
+          this.showAlert('Xóa thất bại.', 'error');
+          this.isSubmitting = false;
         }
       });
   }
-}
-  cancelCreate(): void {
-    this.resetForm();
-  }
-
   resetForm(): void {
     this.newCategory = { name: '', description: '' };
     this.isEditing = false;
     this.editId = null;
-    this.showCreateForm = false;
+    this.isSubmitting = false;
   }
 }

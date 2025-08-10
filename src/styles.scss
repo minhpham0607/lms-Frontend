@@ -14,3 +14,36 @@ body {
   position: relative;
   min-height: 100vh;
 }
+
+/* Global responsive sidebar rules */
+@media (max-width: 768px) {
+  .main-content,
+  .dashboard-content,
+  .courses-container,
+  .content-area {
+    margin-left: 60px !important;
+    padding: 1rem !important;
+    max-width: calc(100vw - 60px) !important;
+  }
+  
+  /* Ensure modals work properly with responsive sidebar */
+  .modal-overlay {
+    z-index: 10000 !important;
+  }
+  
+  .modal-container {
+    z-index: 10001 !important;
+  }
+  
+  /* Fix any potential layout issues on mobile */
+  .layout-row,
+  .dashboard-layout,
+  .courses-layout {
+    overflow-x: hidden;
+  }
+}
+
+/* Fix for Angular Material compatibility if used */
+.mat-drawer-container {
+  background: transparent !important;
+}

@@ -13,7 +13,7 @@ aside {
     user-select: none;
     overflow-y: auto;
     border-radius: 0;
-    transition: transform 0.3s ease;
+    transition: all 0.3s ease;
     z-index: 10;
     margin: 0;
     padding: 0;
@@ -23,6 +23,20 @@ aside.hide {
     transform: translateX(-100%);
 }
 
+/* Responsive - Thu nhỏ sidebar */
+@media (max-width: 768px) {
+    aside {
+        width: 60px;
+        overflow: visible;
+    }
+    
+    aside.expanded {
+        width: 260px;
+        box-shadow: 4px 4px 20px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
+    }
+}
+
 aside .logo-container {
     display: flex;
     align-items: center;
@@ -30,6 +44,7 @@ aside .logo-container {
     padding: 0 32px 32px 32px;
     margin-bottom: 10px;
     margin-top: 30px;
+    transition: all 0.3s ease;
 }
 
 aside .logo-container img {
@@ -47,6 +62,42 @@ aside .logo-container span {
     font-size: 27px;
     margin: 0;
     user-select: none;
+    transition: all 0.3s ease;
+}
+
+/* Logo responsive */
+@media (max-width: 768px) {
+    aside .logo-container {
+        padding: 0 12px 20px 12px;
+        justify-content: center;
+        margin-bottom: 5px;
+        margin-top: 15px;
+    }
+    
+    aside .logo-container img {
+        width: 32px;
+        height: 32px;
+    }
+    
+    aside .logo-container span {
+        display: none;
+    }
+    
+    aside.expanded .logo-container {
+        padding: 0 32px 32px 32px;
+        justify-content: flex-start;
+        margin-bottom: 10px;
+        margin-top: 30px;
+    }
+    
+    aside.expanded .logo-container img {
+        width: 40px;
+        height: 40px;
+    }
+    
+    aside.expanded .logo-container span {
+        display: inline;
+    }
 }
 
 nav {
@@ -89,6 +140,44 @@ nav a i {
     text-align: center;
 }
 
+/* Nav responsive */
+@media (max-width: 768px) {
+    nav a {
+        padding: 0;
+        justify-content: center;
+        margin-bottom: 8px;
+        width: 60px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        gap: 0;
+        position: relative;
+    }
+    
+    nav a i {
+        font-size: 20px;
+        margin: 0;
+        position: static;
+    }
+    
+    nav a span {
+        display: none; /* Completely hide text instead of opacity */
+    }
+    
+    aside.expanded nav a {
+        padding: 16px 32px;
+        justify-content: flex-start;
+        margin-bottom: 12px;
+        width: auto;
+        height: auto;
+        gap: 20px; /* Restore gap when expanded */
+    }
+    
+    aside.expanded nav a span {
+        display: inline; /* Show text when expanded */
+    }
+}
+
 .logout {
     display: flex;
     align-items: center;
@@ -116,8 +205,86 @@ nav a i {
     text-align: center;
 }
 
-@media (max-width: 767px) {
-    aside {
-        display: none;
+/* Logout responsive */
+@media (max-width: 768px) {
+    .logout {
+        padding: 0;
+        justify-content: center;
+        width: 60px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        gap: 0;
+        position: relative;
+    }
+    
+    .logout i {
+        font-size: 24px;
+        margin: 0;
+        position: static;
+    }
+    
+    .logout span {
+        display: none; /* Completely hide text instead of opacity */
+    }
+    
+    aside.expanded .logout {
+        padding: 16px 32px;
+        justify-content: flex-start;
+        width: auto;
+        height: auto;
+        gap: 12px; /* Restore gap when expanded */
+    }
+    
+    aside.expanded .logout span {
+        display: inline; /* Show text when expanded */
+    }
+}
+
+/* Removed the problematic media query that hides sidebar completely */
+/* We want sidebar to remain visible as icons on all screen sizes */
+
+/* Mobile expanded state - when sidebarExpanded is true */
+@media (max-width: 768px) {
+    aside.expanded {
+        width: 260px !important;
+        z-index: 1001;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+    }
+    
+    aside.expanded .logo-container span {
+        opacity: 1 !important;
+        width: auto !important;
+        overflow: visible !important;
+    }
+    
+    aside.expanded nav a span {
+        display: inline !important;
+        opacity: 1 !important;
+        width: auto !important;
+        overflow: visible !important;
+    }
+    
+    aside.expanded .logout span {
+        display: inline !important;
+        opacity: 1 !important;
+        width: auto !important;
+        overflow: visible !important;
+    }
+}
+
+/* Desktop hover expanded state */
+@media (min-width: 769px) {
+    aside.expanded {
+        width: 260px !important;
+    }
+    
+    aside.expanded .logo-container span,
+    aside.expanded nav a span,
+    aside.expanded .logout span {
+        display: inline !important;
+        opacity: 1 !important;
+        width: auto !important;
+        overflow: visible !important;
     }
 }

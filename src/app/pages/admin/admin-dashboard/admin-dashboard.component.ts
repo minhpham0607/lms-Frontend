@@ -2,13 +2,14 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SidebaradminComponent } from '../../../components/sidebaradmin/sidebaradmin.component';
 import { ProfileComponent } from '../../../components/profile/profile.component';
+import { NotificationComponent } from '../../../components/notification/notification.component';
 import { SessionService } from '../../../services/session.service';
 import { UserService } from '../../../services/user.service';
 
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, SidebaradminComponent, ProfileComponent],
+  imports: [CommonModule, SidebaradminComponent, ProfileComponent, NotificationComponent],
   templateUrl: './admin-dashboard.component.html',
   styleUrls: ['./admin-dashboard.component.scss']
 })

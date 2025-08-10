@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, Inject, PLATFORM_ID, HostListener } from '@angular/core';
 import { UserService, User } from '../../../services/user.service';
 import { NotificationService } from '../../../services/notification.service';
 import { SessionService } from '../../../services/session.service';
@@ -22,6 +22,11 @@ export class UserManagementComponent implements OnInit {
   searchTerm: string = '';
   editingUser: User | null = null;
   selectedAvatarFile: File | null = null;
+  
+  // Loading states
+  isLoading: boolean = false;
+  isUpdating: boolean = false;
+  isCvLoading: boolean = false;
 
   // Phân trang
   currentPage: number = 1;
@@ -51,8 +56,21 @@ export class UserManagementComponent implements OnInit {
     this.loadUsers();
   }
 
+  @HostListener('document:keydown', ['$event'])
+  handleKeyboardEvent(event: KeyboardEvent) {
+    if (event.key === 'Escape') {
+      if (this.editingUser) {
+        this.cancelEdit();
+      }
+      if (this.viewingCvUrl) {
+        this.closeCvViewer();
+      }
+    }
+  }
+
   loadUsers(): void {
     console.log('🔍 Loading users...');
+    this.isLoading = true;
     
     // Kiểm tra thông tin user hiện tại
     const userInfo = this.userService.getCurrentUserInfo();
@@ -75,6 +93,7 @@ export class UserManagementComponent implements OnInit {
     if (userInfo.role !== 'admin') {
       console.error('⚠️ User is not admin, role:', userInfo.role);
       this.notificationService.error('Quyền truy cập bị từ chối', 'Bạn không có quyền truy cập tính năng này.');
+      this.isLoading = false;
       return;
     }
 
@@ -84,9 +103,11 @@ export class UserManagementComponent implements OnInit {
         // Sort by userId descending (newest registration first)
         this.users = data.sort((a, b) => b.userId - a.userId);
         this.applyFilters();
+        this.isLoading = false;
       },
       error: err => {
         console.error('❌ Error loading users:', err);
+        this.isLoading = false;
         if (err.status === 403) {
           console.error('🔒 Forbidden - check token or permissions');
           this.notificationService.error('Không có quyền truy cập', 'Vui lòng đăng nhập lại.');
@@ -165,11 +186,13 @@ export class UserManagementComponent implements OnInit {
     const { password, ...userWithoutPassword } = user;
     this.editingUser = { ...userWithoutPassword, password: '' };
     this.selectedAvatarFile = null;
+    console.log('✏️ Starting edit for user:', user.username);
   }
 
   cancelEdit(): void {
     this.editingUser = null;
     this.selectedAvatarFile = null;
+    console.log('❌ Edit cancelled');
   }
 
   onAvatarSelected(event: Event): void {
@@ -182,6 +205,7 @@ export class UserManagementComponent implements OnInit {
   updateUser(): void {
     if (!this.editingUser) return;
 
+    this.isUpdating = true;
     const formData = new FormData();
     formData.append('username', this.editingUser.username);
     formData.append('email', this.editingUser.email);
@@ -218,10 +242,12 @@ export class UserManagementComponent implements OnInit {
         this.notificationService.success('Cập nhật thành công', 'Thông tin người dùng đã được cập nhật.');
         this.editingUser = null;
         this.selectedAvatarFile = null;
+        this.isUpdating = false;
         this.loadUsers();
       },
       error: err => {
         console.error('❌ Update failed:', err);
+        this.isUpdating = false;
         this.notificationService.error('Cập nhật thất bại', err.error?.message || err.message || 'Có lỗi xảy ra khi cập nhật.');
       }
     });
@@ -298,11 +324,20 @@ export class UserManagementComponent implements OnInit {
   }
 
   openCvViewer(cvUrl: string): void {
+    this.isCvLoading = true;
     this.viewingCvUrl = `http://localhost:8080/${cvUrl}`;
+    console.log('📄 Opening CV viewer for:', this.viewingCvUrl);
+    
+    // Simulate loading state for iframe
+    setTimeout(() => {
+      this.isCvLoading = false;
+    }, 1000);
   }
 
   closeCvViewer(): void {
     this.viewingCvUrl = null;
+    this.isCvLoading = false;
+    console.log('❌ CV viewer closed');
   }
 
   // Add getter methods for template binding

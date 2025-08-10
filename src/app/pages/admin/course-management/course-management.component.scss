@@ -80,27 +80,6 @@ body {
   box-shadow: 0 4px 12px rgba(42, 82, 226, 0.3);
 }
 
-// .sidebar-nav a {
-//   display: flex;
-//   align-items: center;
-//   gap: 0.75rem;
-//   font-size: 0.875rem;
-//   font-weight: 600;
-//   color: #2a3a5b;
-//   padding: 0.5rem 0.75rem;
-//   border-radius: 0.375rem;
-//   transition: background 0.2s;
-// }
-
-// .sidebar-nav a:hover {
-//   background-color: #e6f0ff;
-// }
-
-// .sidebar-nav .active {
-//   background-color: #cce6ff;
-// }
-
-/* Main content */
 main {
   padding: 1.5rem;
   flex: 1;
@@ -804,6 +783,10 @@ button.bg-\[\#4a90e2\]:hover {
   left: 0;
   height: 100vh;
   z-index: 100;
+
+  @media (max-width: 768px) {
+    width: 60px;
+  }
 }
 
 .main-content {
@@ -812,6 +795,11 @@ button.bg-\[\#4a90e2\]:hover {
   flex: 1;
   background: #f5f7fa;
   min-height: 100vh;
+
+  @media (max-width: 768px) {
+    margin-left: 60px;
+    padding: 1rem;
+  }
 }
 
 /* Profile header styling */

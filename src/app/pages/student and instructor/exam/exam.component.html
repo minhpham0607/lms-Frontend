@@ -55,6 +55,13 @@
             <span class="menu-text">Modules</span>
           </a>
         </div>
+        <div class="link" [ngClass]="{ 'active': currentPage === 'Video' }" *ngIf="!isStudent()">
+          <a href="#" (click)="navigateToVideo(); $event.preventDefault()"
+            [ngClass]="{ 'active-link': currentPage === 'Video' }">
+            <span *ngIf="currentPage === 'Video'" class="active-indicator">|</span>
+            <span class="menu-text">Video</span>
+          </a>
+        </div>
         <div class="link" [ngClass]="{ 'active': currentPage === 'Tests' }">
           <a href="#" (click)="navigateToTests(); $event.preventDefault()" [ngClass]="{ 'active-link': currentPage === 'Tests' }">
             <span *ngIf="currentPage === 'Tests'" class="active-indicator">|</span>

@@ -1,41 +1,149 @@
+// Layout structure
+.layout-row {
+  display: flex;
+  min-height: 100vh;
+  background: #f5f7fa;
+  width: 100%;
+}
+
+.sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  overflow-y: auto;
+}
+
+.main-content {
+  flex: 1;
+  min-width: 0;
+  margin-left: 260px; /* Space for fixed sidebar */
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #e3e8ff;
+  
+  @media (max-width: 768px) {
+    margin-left: 60px;
+    padding: 1rem;
+  }
+}
+
+.profile-header {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  background: white;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+/* Breadcrumb */
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #018ED5;
+  font-size: 1.125rem;
+  font-weight: 400;
+  margin-bottom: 0.5rem;
+  user-select: none;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+
+  > * {
+    display: inline-block;
+  }
+}
+
+.breadcrumb button {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: #8bb3d8;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.breadcrumb button:hover {
+  color: #5a8fcf;
+}
+
+.breadcrumb-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: 5px;
+  font-size: 18px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.breadcrumb-item {
+  white-space: nowrap;
+  display: inline-block;
+
+  &.course-name {
+    color: #3371ce;
+    font-weight: 500;
+  }
+
+  &.current-page {
+    color: #666;
+    font-weight: 400;
+  }
+}
+
+.breadcrumb-separator {
+  color: #999;
+  font-weight: 400;
+  white-space: nowrap;
+  display: inline-block;
+  padding: 0 4px;
+}
+
+/* Content layout */
+.content-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 768px) {
+  .content-wrapper {
+    flex-direction: row;
+    gap: 0;
+  }
+}
+
+.course-content {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-sizing: border-box;
+  max-width: 100%;
+  box-shadow: 0 0 6px rgb(0 0 0 / 0.05);
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  margin-top: 1rem;
+}
+
 // Component wrapper
 :host {
   display: block;
   width: 100%;
   min-height: 100vh;
-}
-
-.learn-online-layout {
-  font-family: "Inter", sans-serif;
-  margin: 0;
-  min-height: 100vh;
-  background: linear-gradient(to right, #b7cbd1, #a1b9be);
-  position: relative;
-}
-
-/* Main content - offset để không bị sidebar đè */
-main.content {
-  margin-left: 260px; /* Width của sidebar + padding */
-  margin-right: 272px; /* Width của right sidebar + padding */
-  padding: 2rem;
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  max-width: calc(100% - 532px); /* Total width - both sidebars */
-  box-sizing: border-box;
-}
-
-/* Full width layout when right sidebar is hidden */
-.learn-online-layout.no-right-sidebar main.content {
-  margin-right: 2rem; /* Remove right sidebar margin */
-  max-width: calc(100% - 262px); /* Only account for left sidebar */
-}
-
-main.content h2 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: 2rem;
-  color: #374151;
 }
 
 /* Video call dropdown - chỉ giữ container */

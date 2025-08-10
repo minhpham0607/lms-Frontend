@@ -551,4 +551,23 @@ export class AddExamComponent implements OnInit, AfterViewInit {
       }
     }
   }
+
+  // Helper methods for template
+  isStudent(): boolean {
+    return this.sessionService.isStudent();
+  }
+
+  navigateToVideo(): void {
+    console.log('navigateToVideo called');
+    if (this.courseId) {
+      // Check if user is instructor/admin
+      if (this.canManageContent()) {
+        // Navigate to video upload page for instructors
+        this.router.navigate(['/video-upload'], { queryParams: { courseId: this.courseId } });
+      } else {
+        // Navigate to learn online page for students
+        this.router.navigate(['/learn-online'], { queryParams: { courseId: this.courseId } });
+      }
+    }
+  }
 }

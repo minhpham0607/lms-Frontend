@@ -33,7 +33,13 @@
       </div>
       
       <div class="users-container">
-        <div class="table-wrapper">
+        <div *ngIf="isLoading" class="loading-container">
+          <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>Đang tải danh sách người dùng...</span>
+          </div>
+        </div>
+        <div *ngIf="!isLoading" class="table-wrapper">
           <table class="users-table">
             <thead>
               <tr>
@@ -97,7 +103,7 @@
         </div>
 
         <!-- Pagination -->
-        <div class="pagination-container" *ngIf="totalPages > 1">
+        <div *ngIf="!isLoading && totalPages > 1" class="pagination-container">
           <button (click)="prevPage()" [disabled]="currentPage === 1" class="pagination-btn">
             <i class="fas fa-chevron-left"></i>
           </button>
@@ -125,9 +131,9 @@
       </div>
 
       <!-- Edit User Modal -->
-      <div *ngIf="editingUser" class="modern-modal-overlay" (click)="cancelEdit()">
-        <div class="modern-modal-container" (click)="$event.stopPropagation()">
-          <div class="modern-modal">
+      <div *ngIf="editingUser" class="modal-overlay" (click)="cancelEdit()">
+        <div class="modal-container" (click)="$event.stopPropagation()">
+          <div class="edit-modal">
             <div class="modal-header">
               <h2 class="modal-title">
                 <i class="fas fa-user-edit"></i>
@@ -212,6 +218,10 @@
                     </div>
                     
                     <div class="form-group">
+                      <label class="form-label">
+                        <i class="fas fa-check-circle"></i>
+                        Trạng thái
+                      </label>
                       <div class="checkbox-wrapper">
                         <label class="checkbox-label">
                           <input 
@@ -231,81 +241,31 @@
                     </div>
                   </div>
                 </div>
-
-                <!-- Security -->
-                <div class="form-section">
-                  <h3 class="section-title">
-                    <i class="fas fa-lock"></i>
-                    Bảo mật
-                  </h3>
-                  <div class="form-group">
-                    <label class="form-label">
-                      <i class="fas fa-key"></i>
-                      Mật khẩu mới
-                    </label>
-                    <input 
-                      type="password" 
-                      [(ngModel)]="editingUser.password" 
-                      name="password"
-                      placeholder="Nhập mật khẩu mới" 
-                      class="form-input" />
-                    <small class="form-hint">
-                      <i class="fas fa-info-circle"></i>
-                      Chỉ nhập nếu muốn thay đổi mật khẩu hiện tại
-                    </small>
-                  </div>
-                </div>
-
-                <!-- Avatar -->
-                <div class="form-section">
-                  <h3 class="section-title">
-                    <i class="fas fa-image"></i>
-                    Ảnh đại diện
-                  </h3>
-                  <div class="form-group">
-                    <label class="form-label">
-                      <i class="fas fa-cloud-upload-alt"></i>
-                      Chọn ảnh đại diện
-                    </label>
-                    <input 
-                      type="file" 
-                      (change)="onAvatarSelected($event)" 
-                      accept="image/*" 
-                      class="form-input" />
-                    <small class="form-hint">
-                      <i class="fas fa-info-circle"></i>
-                      Định dạng hỗ trợ: JPG, PNG, GIF. Kích thước tối đa: 5MB
-                    </small>
-                  </div>
-                </div>
-
-                <!-- Modal Actions -->
-                <div class="modal-actions">
-                  <button type="button" (click)="confirmDelete(editingUser)" class="btn-delete">
-                    <i class="fas fa-trash-alt"></i>
-                    Xóa người dùng
-                  </button>
-                  <div class="btn-group">
-                    <button type="button" (click)="cancelEdit()" class="btn-cancel">
-                      <i class="fas fa-times"></i>
-                      Hủy bỏ
-                    </button>
-                    <button type="submit" class="btn-save">
-                      <i class="fas fa-save"></i>
-                      Cập nhật
-                    </button>
-                  </div>
-                </div>
               </form>
+            </div>
+            
+            <!-- Modal Actions -->
+            <div class="modal-actions">
+              <div class="btn-group">
+                <button type="button" (click)="cancelEdit()" class="btn-cancel">
+                  <i class="fas fa-times"></i>
+                  Hủy bỏ
+                </button>
+                <button type="button" (click)="updateUser()" class="btn-save" [disabled]="isUpdating">
+                  <i class="fas fa-spinner fa-spin" *ngIf="isUpdating; else saveIcon"></i>
+                  <ng-template #saveIcon><i class="fas fa-save"></i></ng-template>
+                  {{ isUpdating ? 'Đang cập nhật...' : 'Cập nhật' }}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       <!-- CV Viewer Modal -->
-      <div *ngIf="viewingCvUrl" class="modern-modal-overlay" (click)="closeCvViewer()">
-        <div class="modern-modal-container cv-viewer" (click)="$event.stopPropagation()">
-          <div class="modern-modal">
+      <div *ngIf="viewingCvUrl" class="modal-overlay cv-modal" (click)="closeCvViewer()">
+        <div class="modal-container cv-viewer" (click)="$event.stopPropagation()">
+          <div class="cv-modal">
             <div class="modal-header">
               <h2 class="modal-title">
                 <i class="fas fa-file-alt"></i>
@@ -314,7 +274,11 @@
               <button class="modal-close-btn" (click)="closeCvViewer()">×</button>
             </div>
             <div class="modal-content cv-content">
-              <iframe [src]="viewingCvUrl" frameborder="0"></iframe>
+              <div *ngIf="isCvLoading" class="cv-loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>Đang tải CV...</span>
+              </div>
+              <iframe [src]="viewingCvUrl" frameborder="0" (load)="isCvLoading = false"></iframe>
             </div>
             <div class="modal-actions">
               <a [href]="viewingCvUrl" target="_blank" class="btn-external">

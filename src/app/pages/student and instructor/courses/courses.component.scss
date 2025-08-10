@@ -10,6 +10,10 @@
   left: 0;
   height: 100vh;
   z-index: 100;
+
+  @media (max-width: 768px) {
+    width: 60px;
+  }
 }
 
 .courses-container {
@@ -20,6 +24,11 @@
   background: #f5f7fa;
   min-height: 100vh;
   flex: 1;
+
+  @media (max-width: 768px) {
+    margin-left: 60px;
+    padding: 1rem;
+  }
 }
 
 /* Profile header styling */

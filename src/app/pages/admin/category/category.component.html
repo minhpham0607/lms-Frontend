@@ -18,53 +18,149 @@
     
     <div class="header">
       <h1>Quản lý danh mục khóa học</h1>
-      <p *ngIf="userRole">Vai trò: {{ userRole }}</p>
       <div class="permission-notice" *ngIf="!isAdmin">
         <p>⚠️ Bạn đang xem với quyền chỉ đọc. Chỉ admin mới có thể tạo/sửa/xóa danh mục.</p>
       </div>
     </div>
 
-  <div class="category-search-form">
-    <input [(ngModel)]="searchName" type="text" placeholder="Tìm kiếm theo tên" />
-    <input [(ngModel)]="searchDescription" type="text" placeholder="Tìm kiếm theo mô tả" />
-    <button (click)="fetchCategories()">Tìm kiếm</button>
-    <button *ngIf="isAdmin" (click)="showCreateForm = true">Tạo mới</button>
-  </div>
+    <div class="category-search-form">
+      <div class="search-controls">
+        <div class="search-inputs">
+          <input [(ngModel)]="searchName" type="text" placeholder="Tìm kiếm theo tên" class="search-input" />
+        </div>
+        <div class="action-buttons">
+          <button (click)="fetchCategories()" class="btn-search">
+            <i class="fas fa-search"></i>
+            Tìm kiếm
+          </button>
+          <button *ngIf="isAdmin" (click)="openCreateModal()" class="btn-create">
+            <i class="fas fa-plus"></i>
+            Tạo mới
+          </button>
+        </div>
+      </div>
+    </div>
 
-  <!-- Form tạo mới / chỉnh sửa - chỉ hiển thị cho admin -->
-  <div class="category-create-form" *ngIf="showCreateForm && isAdmin">
-    <h3>{{ isEditing ? 'Chỉnh sửa' : 'Tạo mới' }} danh mục</h3>
-    <input [(ngModel)]="newCategory.name" type="text" placeholder="Tên danh mục" />
-    <input [(ngModel)]="newCategory.description" type="text" placeholder="Mô tả danh mục" />
-    <button (click)="submitCategory()">{{ isEditing ? 'Cập nhật' : 'Lưu' }}</button>
-    <button (click)="cancelCreate()">Hủy</button>
-    <!-- Nút xóa chỉ hiển thị khi đang chỉnh sửa -->
-    <button *ngIf="isEditing" (click)="deleteCategory()" class="delete-btn">Xóa</button>
-  </div>
+    <!-- Bảng danh sách danh mục -->
+    <div class="categories-container">
+      <div *ngIf="categories.length > 0" class="table-wrapper">
+        <table class="category-table">
+          <thead>
+            <tr>
+              <th><i class="fas fa-tag"></i> Tên danh mục</th>
+              <th><i class="fas fa-info-circle"></i> Mô tả</th>
+              <th *ngIf="isAdmin"><i class="fas fa-cog"></i> Hành động</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let c of categories" class="category-row">
+              <td class="name-cell">{{ c.name }}</td>
+              <td class="description-cell">{{ c.description }}</td>
+              <td *ngIf="isAdmin" class="actions-cell">
+                <button (click)="editCategory(c)" class="btn-edit">
+                  <i class="fas fa-edit"></i>
+                  Chỉnh sửa
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-  <!-- Bảng danh sách danh mục -->
-  <table class="category-table" *ngIf="categories.length > 0">
-    <thead>
-      <tr>
-        <th>Tên danh mục</th>
-        <th>Mô tả</th>
-        <th *ngIf="isAdmin">Hành động</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let c of categories">
-        <td>{{ c.name }}</td>
-        <td>{{ c.description }}</td>
-        <td *ngIf="isAdmin">
-          <button (click)="editCategory(c)">Chỉnh sửa</button>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-
-  <div *ngIf="categories.length === 0" class="empty-state">
-    <p>Không tìm thấy danh mục nào.</p>
+      <div *ngIf="categories.length === 0" class="empty-state">
+        <div class="empty-icon">
+          <i class="fas fa-folder-open"></i>
+        </div>
+        <h3>Chưa có danh mục nào</h3>
+        <p>Không tìm thấy danh mục nào phù hợp với tiêu chí tìm kiếm.</p>
+        <button *ngIf="isAdmin" (click)="openCreateModal()" class="btn-create-empty">
+          <i class="fas fa-plus"></i>
+          Tạo danh mục đầu tiên
+        </button>
+      </div>
+    </div>
   </div>
+</div>
+
+<!-- Category Modal - moved outside layout -->
+<div *ngIf="showModal" class="modal-overlay" (click)="closeModal()">
+  <div class="modal-container" (click)="$event.stopPropagation()">
+    <div class="category-modal">
+      <div class="modal-header">
+        <div class="header-content">
+          <div class="header-icon">
+            <i class="fas" [ngClass]="isEditing ? 'fa-edit' : 'fa-plus'"></i>
+          </div>
+          <div class="header-text">
+            <h2 class="modal-title">{{ isEditing ? 'Chỉnh sửa danh mục' : 'Tạo mới danh mục' }}</h2>
+            <p class="modal-subtitle">{{ isEditing ? 'Cập nhật thông tin danh mục' : 'Thêm danh mục mới vào hệ thống' }}</p>
+          </div>
+        </div>
+        <button type="button" (click)="closeModal()" class="close-btn">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="modal-content">
+        <form (ngSubmit)="submitCategory()" #categoryForm="ngForm">
+          <div class="form-section">
+            <h3 class="section-title">
+              <i class="fas fa-info-circle"></i>
+              Thông tin danh mục
+            </h3>
+            
+            <div class="form-group">
+              <label for="categoryName" class="form-label">
+                <i class="fas fa-tag"></i>
+                Tên danh mục
+              </label>
+              <input 
+                type="text"
+                id="categoryName" 
+                [(ngModel)]="newCategory.name" 
+                name="categoryName"
+                class="form-input"
+                placeholder="Nhập tên danh mục"
+                required />
+            </div>
+            
+            <div class="form-group">
+              <label for="categoryDescription" class="form-label">
+                <i class="fas fa-align-left"></i>
+                Mô tả danh mục
+              </label>
+              <textarea 
+                id="categoryDescription" 
+                [(ngModel)]="newCategory.description" 
+                name="categoryDescription"
+                class="form-textarea"
+                placeholder="Nhập mô tả cho danh mục"
+                rows="4"
+                required></textarea>
+            </div>
+          </div>
+        </form>
+      </div>
+      
+      <!-- Modal Actions -->
+      <div class="modal-actions">
+        <button type="button" *ngIf="isEditing" (click)="confirmDelete()" class="btn-delete">
+          <i class="fas fa-trash"></i>
+          Xóa
+        </button>
+        <div class="btn-group">
+          <button type="button" (click)="closeModal()" class="btn-cancel">
+            <i class="fas fa-times"></i>
+            Hủy bỏ
+          </button>
+          <button type="button" (click)="submitCategory()" class="btn-save" [disabled]="!newCategory.name || !newCategory.description">
+            <i class="fas fa-save" *ngIf="!isSubmitting"></i>
+            <i class="fas fa-spinner fa-spin" *ngIf="isSubmitting"></i>
+            {{ isSubmitting ? (isEditing ? 'Đang cập nhật...' : 'Đang tạo...') : (isEditing ? 'Cập nhật' : 'Tạo mới') }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 

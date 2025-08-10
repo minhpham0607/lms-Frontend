@@ -22,6 +22,13 @@ export class ProfileUpdateComponent implements OnInit {
   imagePreview: string | null = null;
   currentUser: User | null = null;
   userId: number | null = null;
+  passwordStrength: any = {
+    hasLength: false,
+    hasNumber: false,
+    hasLetter: false,
+    hasSpecial: false,
+    isValid: false
+  };
 
   constructor(
     private fb: FormBuilder,
@@ -34,13 +41,67 @@ export class ProfileUpdateComponent implements OnInit {
       username: ['', [Validators.required, Validators.minLength(3)]],
       email: ['', [Validators.required, Validators.email]],
       fullName: ['', [Validators.required, Validators.minLength(2)]],
-      password: [''], // Optional field for password update
+      password: ['', [this.conditionalPasswordValidator.bind(this)]], // Conditional validator
       confirmPassword: ['']
+    }, { validators: this.passwordMatchValidator });
+
+    // Subscribe to password changes for strength checking
+    this.profileForm.get('password')?.valueChanges.subscribe(password => {
+      this.checkPasswordStrength(password || '');
     });
   }
 
   ngOnInit() {
     this.loadCurrentUser();
+  }
+
+  strongPasswordValidator(control: any) {
+    const password = control.value;
+    if (!password) return null;
+
+    const hasLength = password.length >= 10;
+    const hasNumber = /[0-9]/.test(password);
+    const hasLetter = /[a-zA-Z]/.test(password);
+    const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+
+    const valid = hasLength && hasNumber && hasLetter && hasSpecial;
+    return valid ? null : { weakPassword: true };
+  }
+
+  conditionalPasswordValidator(control: any) {
+    const password = control.value;
+    // If password is empty, it's valid (optional field)
+    if (!password || password.trim() === '') {
+      return null;
+    }
+    // If password has value, apply strong password validation
+    return this.strongPasswordValidator(control);
+  }
+
+  checkPasswordStrength(password: string) {
+    this.passwordStrength = {
+      hasLength: password.length >= 10,
+      hasNumber: /[0-9]/.test(password),
+      hasLetter: /[a-zA-Z]/.test(password),
+      hasSpecial: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
+      isValid: false
+    };
+
+    this.passwordStrength.isValid =
+      this.passwordStrength.hasLength &&
+      this.passwordStrength.hasNumber &&
+      this.passwordStrength.hasLetter &&
+      this.passwordStrength.hasSpecial;
+  }
+
+  passwordMatchValidator(group: FormGroup) {
+    const password = group.get('password')?.value;
+    const confirmPassword = group.get('confirmPassword')?.value;
+    
+    // Skip validation if password is empty (optional field)
+    if (!password) return null;
+    
+    return password === confirmPassword ? null : { passwordMismatch: true };
   }
 
   loadCurrentUser() {
@@ -132,12 +193,17 @@ export class ProfileUpdateComponent implements OnInit {
       return;
     }
 
-    // Check password confirmation
+    // Check password confirmation and strength
     const password = this.profileForm.get('password')?.value;
     const confirmPassword = this.profileForm.get('confirmPassword')?.value;
     
     if (password && password !== confirmPassword) {
       this.showAlert('Mật khẩu xác nhận không khớp');
+      return;
+    }
+
+    if (password && !this.passwordStrength.isValid) {
+      this.showAlert('Mật khẩu không đủ mạnh. Mật khẩu phải có ít nhất 10 ký tự, bao gồm chữ, số và ký tự đặc biệt!');
       return;
     }
 

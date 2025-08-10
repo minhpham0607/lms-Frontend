@@ -709,4 +709,9 @@ export class ExamComponent {
     const type = this.getExamType(exam);
     return type === 'Tự luận' ? 'type-essay' : 'type-multiple-choice';
   }
+
+  // Helper method for template
+  isStudent(): boolean {
+    return this.sessionService.isStudent();
+  }
 }

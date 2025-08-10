@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { SessionService } from '../../../services/session.service';
 import { CourseService, Course, Enrollment } from '../../../services/course.service';
 import { UserService } from '../../../services/user.service';
-import { AuthDebugService } from '../../../services/auth-debug.service';
 import { SidebaradminComponent } from '../../../components/sidebaradmin/sidebaradmin.component';
 import { SidebarComponent } from '../../../components/sidebar/sidebar.component';
 import { ProfileComponent } from '../../../components/profile/profile.component';
@@ -160,7 +159,6 @@ export class ParticipantStatisticsComponent implements OnInit {
     private sessionService: SessionService,
     private courseService: CourseService,
     private userService: UserService,
-    private authDebugService: AuthDebugService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
@@ -309,24 +307,15 @@ export class ParticipantStatisticsComponent implements OnInit {
       console.log('🚀 Starting loadParticipantStatistics...');
       
       // Debug authentication state
-      console.log('🔐 Debugging auth state...');
-      this.authDebugService.debugAuthState();
-      
-      // Check if token is valid
-      const isTokenValid = this.authDebugService.isTokenValid();
-      console.log('🔑 Token validation result:', isTokenValid);
-      
-      if (!isTokenValid) {
-        throw new Error('Authentication token is invalid or expired. Please login again.');
+      // Check user authentication
+      if (typeof localStorage !== 'undefined') {
+        const token = localStorage.getItem('token');
+        if (!token || !this.sessionService.isTokenValid(token)) {
+          throw new Error('Authentication token is invalid or expired. Please login again.');
+        }
       }
 
       console.log('🔄 Loading participant statistics from API...');
-      console.log('🔍 Current user role check:', {
-        userRole: this.userRole,
-        isInstructor: this.isInstructor,
-        isAdmin: this.isAdmin,
-        currentUserId: this.currentUserId
-      });
       
       // Validate required user data
       if (!this.currentUserId) {
@@ -344,22 +333,9 @@ export class ParticipantStatisticsComponent implements OnInit {
           // First get all courses, then filter by instructor ID
           const allCourses = await this.courseService.getCourses().toPromise();
           console.log('🎓 All courses loaded:', allCourses?.length || 0, 'courses');
-          console.log('🔍 All courses details:', allCourses?.map(c => ({ 
-            id: c.courseId, 
-            title: c.title, 
-            instructorId: c.instructorId,
-            status: c.status
-          })));
-          console.log('🔍 Filtering courses for instructor ID:', this.currentUserId);
           
           coursesData = allCourses?.filter(course => {
             const isMatch = course.instructorId === this.currentUserId;
-            console.log(`Course ${course.courseId} (${course.title}): instructorId=${course.instructorId}, currentUserId=${this.currentUserId}, match=${isMatch}`);
-            if (isMatch) {
-              console.log(`✅ Course ${course.courseId} SHOULD belong to instructor ${this.currentUserId}`);
-            } else {
-              console.log(`❌ Course ${course.courseId} belongs to instructor ${course.instructorId}, not ${this.currentUserId}`);
-            }
             return isMatch;
           }) || [];
           
@@ -1398,12 +1374,13 @@ export class ParticipantStatisticsComponent implements OnInit {
     console.group('🔧 API Connectivity Debug');
     
     // Check authentication first
-    this.authDebugService.debugAuthState();
-    
-    if (!this.authDebugService.isTokenValid()) {
-      console.log('❌ Cannot test API - invalid token');
-      console.groupEnd();
-      return;
+    if (typeof localStorage !== 'undefined') {
+      const token = localStorage.getItem('token');
+      if (!token || !this.sessionService.isTokenValid(token)) {
+        console.log('❌ Cannot test API - invalid token');
+        console.groupEnd();
+        return;
+      }
     }
 
     try {
@@ -1459,38 +1436,6 @@ export class ParticipantStatisticsComponent implements OnInit {
     }
     
     console.groupEnd();
-  }
-
-  // Comprehensive authentication test
-  async testAuthentication() {
-    console.log('� === TESTING AUTHENTICATION === 🔐');
-    
-    try {
-      await this.authDebugService.runFullDiagnostic();
-      
-      // Also try to fix any issues found
-      const fixResult = await this.authDebugService.attemptFix();
-      
-      if (fixResult.success) {
-        console.log('✅ Authentication fixed:', fixResult.message);
-        // Retry loading data
-        this.loadParticipantStatistics();
-      } else {
-        console.log('❌ Could not fix authentication:', fixResult.message);
-        alert('Authentication issue detected: ' + fixResult.message);
-      }
-      
-    } catch (error) {
-      console.error('❌ Authentication test failed:', error);
-    }
-  }
-
-  // Force retry authentication
-  retryWithFreshAuth() {
-    console.log('🔄 Retrying with fresh authentication...');
-    
-    // Try to fix auth first
-    this.testAuthentication();
   }
 
   // Additional debug methods
