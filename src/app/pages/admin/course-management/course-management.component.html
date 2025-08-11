@@ -21,12 +21,33 @@
     <h1>Courses</h1>
     <div class="search-create-row">
       <input class="search-input" placeholder="Search" type="search" [(ngModel)]="searchTerm" (ngModelChange)="onFilterChange()"/>
-      <select class="category-filter" [(ngModel)]="selectedCategoryFilter" (ngModelChange)="onFilterChange()">
-        <option value="0">All Categories</option>
-        <option *ngFor="let category of categories" [value]="category.categoryId">
-          {{ category.name }}
-        </option>
-      </select>
+      
+      <!-- Custom Dropdown thay cho select -->
+      <div class="category-filter-wrapper">
+        <button class="category-filter-btn" 
+                (click)="toggleDropdown()"
+                [class.open]="isDropdownOpen">
+          {{ getSelectedCategoryName() }}
+          <svg class="dropdown-arrow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+            <path stroke="#6b7280" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m6 8 4 4 4-4"/>
+          </svg>
+        </button>
+        
+        <div class="custom-dropdown" [class.show]="isDropdownOpen">
+          <div class="dropdown-item" 
+               [class.selected]="selectedCategoryFilter === '0'"
+               (click)="selectCategory('0')">
+            Tất cả
+          </div>
+          <div *ngFor="let category of categories" 
+               class="dropdown-item"
+               [class.selected]="selectedCategoryFilter === category.categoryId.toString()"
+               (click)="selectCategory(category.categoryId.toString())">
+            {{ category.name }}
+          </div>
+        </div>
+      </div>
+      
       <button (click)="navigateToLessonManagement()"
               class="lesson-management-btn">
         Quản lý bài học
@@ -60,12 +81,30 @@
                   <div class="form-row">
                     <div class="form-group">
                       <label>Danh mục</label>
-                      <select [(ngModel)]="courseForm.categoryId">
-                        <option value="" disabled>Chọn danh mục</option>
-                        <option *ngFor="let category of categories" [value]="category.categoryId">
-                          {{ category.name }}
-                        </option>
-                      </select>
+                      <div class="form-dropdown-wrapper">
+                        <button type="button" class="form-dropdown-btn" 
+                                (click)="toggleCategoryDropdown()"
+                                [class.open]="isCategoryDropdownOpen">
+                          {{ getSelectedCategoryFormName() }}
+                          <svg class="dropdown-arrow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                            <path stroke="#6b7280" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m6 8 4 4 4-4"/>
+                          </svg>
+                        </button>
+                        
+                        <div class="form-custom-dropdown" [class.show]="isCategoryDropdownOpen">
+                          <div class="dropdown-item" 
+                               [class.selected]="!courseForm.categoryId"
+                               (click)="selectFormCategory(null)">
+                            Chọn danh mục
+                          </div>
+                          <div *ngFor="let category of categories" 
+                               class="dropdown-item"
+                               [class.selected]="courseForm.categoryId === category.categoryId"
+                               (click)="selectFormCategory(category.categoryId)">
+                            {{ category.name }}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                     <div class="form-group">
                       <label>Giảng viên</label>
@@ -167,11 +206,25 @@
             <div class="form-row">
               <div class="form-group">
                 <label>Danh mục</label>
-                <select [(ngModel)]="selectedCourse.categoryId">
-                  <option *ngFor="let category of categories" [value]="category.categoryId">
-                    {{ category.name }}
-                  </option>
-                </select>
+                <div class="form-dropdown-wrapper">
+                  <button type="button" class="form-dropdown-btn" 
+                          (click)="toggleEditCategoryDropdown()"
+                          [class.open]="isEditCategoryDropdownOpen">
+                    {{ getSelectedEditCategoryName() }}
+                    <svg class="dropdown-arrow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                      <path stroke="#6b7280" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m6 8 4 4 4-4"/>
+                    </svg>
+                  </button>
+                  
+                  <div class="form-custom-dropdown" [class.show]="isEditCategoryDropdownOpen">
+                    <div *ngFor="let category of categories" 
+                         class="dropdown-item"
+                         [class.selected]="selectedCourse && selectedCourse.categoryId === category.categoryId"
+                         (click)="selectEditCategory(category.categoryId)">
+                      {{ category.name }}
+                    </div>
+                  </div>
+                </div>
               </div>
               <div class="form-group">
                 <label>Giảng viên</label>

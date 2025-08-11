@@ -214,7 +214,6 @@ export class DiscussionComponent implements OnInit {
             role: 'instructor'
           };
           console.log('👨‍🏫 Course instructor (from instructor object):', this.courseInstructor);
-          this.showAlert('Đã tải thông tin giảng viên', 'success');
         }
         // Second try: instructorId exists but instructor object is null
         else if (response && response.instructorId && response.instructorId > 0) {
@@ -226,7 +225,6 @@ export class DiscussionComponent implements OnInit {
             role: 'instructor'
           };
           console.log('👨‍🏫 Course instructor (from instructorId + instructorName):', this.courseInstructor);
-          this.showAlert('Đã tải thông tin giảng viên', 'success');
         }
         // Third try: Course object exists but instructorId is null - try to load from course members if instructor
         else if (response && response.courseId && !response.instructorId) {

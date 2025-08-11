@@ -66,14 +66,8 @@ export class SessionService {
       this.isLoggedInSubject.next(false);
       console.log('👋 Session cleared');
 
-      if (showAlert) {
-        this.notificationService.success('Đăng xuất thành công', 'Hẹn gặp lại bạn!');
-      }
-
-      // Delay 1 giây để hiển thị notification trước khi chuyển trang
-      setTimeout(() => {
-        this.router.navigate(['/login']);
-      }, 1000);
+      // Chuyển hướng về trang login
+      this.router.navigate(['/login']);
     }
   }
 

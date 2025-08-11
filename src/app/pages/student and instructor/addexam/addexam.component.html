@@ -104,9 +104,9 @@
               </div>
               <div>
                 <label for="module-select">Module (tùy chọn)</label>
-                <select id="module-select" name="moduleId" [(ngModel)]="selectedModuleId" (change)="onModuleSelectionChange()">
-                  <option value="">-- Chọn Module (có thể bỏ trống) --</option>
-                  <option *ngFor="let module of modules" [value]="module.moduleId">
+                <select id="module-select" name="moduleId" [(ngModel)]="selectedModuleId" (ngModelChange)="onModuleSelectionChange()">
+                  <option [ngValue]="null">-- Chọn Module (có thể bỏ trống) --</option>
+                  <option *ngFor="let module of modules" [ngValue]="module.moduleId">
                     {{ module.orderNumber }}. {{ module.title }}
                   </option>
                 </select>

@@ -365,6 +365,174 @@ button.bg-\[\#4a90e2\]:hover {
   box-sizing: border-box;
 }
 
+/* Style riêng cho select dropdown trong form */
+.form-group select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.75rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 3rem;
+  cursor: pointer;
+  
+  /* Text truncation */
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* Style cho options trong form select */
+.form-group select option {
+  padding: 10px 14px;
+  background-color: #ffffff;
+  color: #374151;
+  font-size: 0.875rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Cross-browser styling cho form select options */
+@-moz-document url-prefix() {
+  .form-group select option {
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
+}
+
+@media screen and (-webkit-min-device-pixel-ratio:0) {
+  .form-group select option {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+}
+
+/* Enhanced styling cho form select khi focus/active */
+.form-group select:focus {
+  outline: none;
+  border-color: #64b9e4;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(140, 201, 232, 0.1);
+}
+
+.form-group select:hover {
+  border-color: #64b9e4;
+  background: #ffffff;
+}
+
+/* Cải thiện spacing và padding cho select trong form */
+.form-group select {
+  min-height: 48px;
+  line-height: 1.5;
+}
+
+/* Style cho disabled options */
+.form-group select option:disabled {
+  color: #9ca3af;
+  background-color: #f9fafb;
+  font-style: italic;
+}
+
+/* Custom Form Dropdown Styling */
+.form-dropdown-wrapper {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+
+.form-dropdown-btn {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fafafa;
+  color: #374151;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 48px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-align: left;
+  
+  /* Text truncation */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.form-dropdown-btn:hover,
+.form-dropdown-btn.open {
+  border-color: #64b9e4;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(140, 201, 232, 0.1);
+}
+
+.form-dropdown-btn .dropdown-arrow {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-left: 0.5rem;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.form-dropdown-btn.open .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+.form-custom-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-height: 200px; /* Giới hạn chiều cao tương đương 5 options */
+  overflow-y: auto;
+  z-index: 1001;
+  display: none;
+}
+
+.form-custom-dropdown.show {
+  display: block;
+}
+
+.form-custom-dropdown .dropdown-item {
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #374151;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.15s ease;
+  
+  /* Text truncation trong dropdown items */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.form-custom-dropdown .dropdown-item:hover {
+  background-color: #f3f4f6;
+}
+
+.form-custom-dropdown .dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.form-custom-dropdown .dropdown-item.selected {
+  background-color: #64b9e4;
+  color: #ffffff;
+}
+
+.form-custom-dropdown .dropdown-item.selected:hover {
+  background-color: #5ba7d1;
+}
+
 .form-group input:focus,
 .form-group textarea:focus,
 .form-group select:focus {
@@ -504,12 +672,14 @@ button.bg-\[\#4a90e2\]:hover {
 .search-input {
   flex: 1;
   min-width: 200px;
-  padding: 0.75rem 1rem;
+  padding: 0.5rem 1rem;
   border: 2px solid #e5e7eb;
   border-radius: 0.5rem;
   font-size: 0.875rem;
   background: #ffffff;
   transition: all 0.2s ease;
+  height: 40px;
+  box-sizing: border-box;
 }
 
 .search-input:focus {
@@ -522,16 +692,107 @@ button.bg-\[\#4a90e2\]:hover {
   color: #9ca3af;
 }
 
-.category-filter {
-  padding: 0.75rem 1rem;
+/* Custom Dropdown Styling */
+.category-filter-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.category-filter-btn {
+  padding: 0.5rem 1rem;
   border: 2px solid #e5e7eb;
   border-radius: 0.5rem;
   background: #ffffff;
   color: #374151;
   font-size: 0.875rem;
-  min-width: 180px;
+  min-width: 160px;
+  max-width: 160px;
   cursor: pointer;
   transition: all 0.2s ease;
+  height: 40px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  
+  /* Text truncation */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.category-filter-btn:hover,
+.category-filter-btn.open {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.dropdown-arrow {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-left: 0.5rem;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.category-filter-btn.open .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+.custom-dropdown {
+  position: absolute;
+  top: calc(100% + 4px); /* Thêm 4px khoảng cách */
+  left: 0;
+  background: #ffffff;
+  border: 2px solid #e5e7eb;
+  border-radius: 0.5rem; /* Bo góc hoàn toàn thay vì chỉ dưới */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-height: 200px; /* Giới hạn chiều cao tương đương 5 options */
+  overflow-y: auto;
+  z-index: 1000;
+  display: none;
+  width: 500px; /* Dropdown rộng 500px */
+}
+
+.custom-dropdown.show {
+  display: block;
+}
+
+.dropdown-item {
+  padding: 10px 14px; /* Tăng padding để rộng rãi hơn */
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #374151;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.15s ease;
+  
+  /* Text truncation trong dropdown items */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dropdown-item:hover {
+  background-color: #f3f4f6;
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item.selected {
+  background-color: #3b82f6;
+  color: #ffffff;
+}
+
+.dropdown-item.selected:hover {
+  background-color: #2563eb;
+}
+
+.category-filter:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .category-filter:focus {
@@ -545,12 +806,17 @@ button.bg-\[\#4a90e2\]:hover {
   color: #ffffff;
   font-weight: 600;
   font-size: 0.875rem;
-  padding: 0.75rem 1.5rem;
+  padding: 0.5rem 1.25rem;
   border-radius: 0.5rem;
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
+  height: 40px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .lesson-management-btn:hover {
@@ -564,13 +830,18 @@ button.bg-\[\#4a90e2\]:hover {
   color: #ffffff;
   font-weight: 600;
   font-size: 0.875rem;
-  padding: 0.75rem 1.5rem;
+  padding: 0.5rem 1.25rem;
   border-radius: 0.5rem;
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
   margin-left: auto;
+  height: 40px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .create-btn-green:hover {

@@ -42,12 +42,9 @@ export class LoginComponent {
           if (res?.token) {
             // Sử dụng SessionService để quản lý session
             this.sessionService.login(res.token);
-          }
-          this.notificationService.success('Thành công', res?.message || 'Chào mừng bạn quay lại!');
-          // Chuyển hướng đến dashboard sau khi đăng nhập thành công
-          setTimeout(() => {
+            // Chuyển hướng đến dashboard sau khi đăng nhập thành công  
             this.router.navigate(['/dashboard']);
-          }, 1000);
+          }
         },
         error: (err) => {
           this.loginError = err.error?.message;

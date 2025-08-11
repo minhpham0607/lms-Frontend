@@ -261,9 +261,15 @@ export class AddExamComponent implements OnInit, AfterViewInit {
         // Set selected module if exists
         if (quiz.moduleId) {
           this.selectedModuleId = quiz.moduleId;
+          console.log('📝 Setting selectedModuleId to:', this.selectedModuleId);
+          console.log('📝 Setting examData.moduleId to:', this.examData.moduleId);
+        } else {
+          this.selectedModuleId = null;
+          console.log('📝 No module associated with this quiz');
         }
         
         console.log('📝 Form populated with quiz data:', this.examData);
+        console.log('📝 Final selectedModuleId:', this.selectedModuleId);
       },
       error: (err: any) => {
         console.error('❌ Error loading quiz data:', err);
@@ -277,13 +283,17 @@ export class AddExamComponent implements OnInit, AfterViewInit {
 
   // Handle module selection
   onModuleSelectionChange(): void {
-    if (this.selectedModuleId) {
+    console.log('🔄 Module selection changed, selectedModuleId:', this.selectedModuleId);
+    
+    if (this.selectedModuleId && this.selectedModuleId !== null) {
       this.examData.moduleId = this.selectedModuleId;
-      console.log('📝 Module selected:', this.selectedModuleId);
+      console.log('📝 Module selected:', this.examData.moduleId);
     } else {
       this.examData.moduleId = undefined;
-      console.log('📝 Module selection cleared');
+      console.log('📝 Module selection cleared, examData.moduleId:', this.examData.moduleId);
     }
+    
+    console.log('📝 Final examData.moduleId:', this.examData.moduleId);
   }
 
   // Tab management
@@ -465,6 +475,8 @@ export class AddExamComponent implements OnInit, AfterViewInit {
     console.log('🎯 Publish:', dto.publish);
     console.log('✏️ Edit Mode:', this.isEditMode);
     console.log('🆔 Quiz ID:', dto.quizId);
+    console.log('📍 selectedModuleId (UI):', this.selectedModuleId);
+    console.log('📍 examData.moduleId (data):', this.examData.moduleId);
 
     return dto;
   }

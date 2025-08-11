@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject, PLATFORM_ID, AfterViewInit } from '@angular/core';
+import { Component, OnInit, Inject, PLATFORM_ID, AfterViewInit, HostListener } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
 import { CourseService, Course } from '../../../services/course.service';
@@ -21,6 +21,11 @@ export class CourseManagementComponent implements OnInit, AfterViewInit {
   courses: Course[] = [];
   isCreating = false;
   isViewing = false;
+  isDropdownOpen = false; // Thêm property để track dropdown state
+  isCategoryDropdownOpen = false; // Thêm property cho form category dropdown
+  isEditCategoryDropdownOpen = false; // Thêm property cho edit form category dropdown
+  Math = Math; // Expose Math object to template
+  
   // Filter properties
   selectedCategoryFilter: string = '0'; // Change to string to match select value
   searchTerm: string = '';
@@ -30,6 +35,79 @@ export class CourseManagementComponent implements OnInit, AfterViewInit {
   // Reset to first page when filters change
   onFilterChange(): void {
     this.currentPage = 1;
+  }
+
+  // Custom dropdown methods
+  toggleDropdown(): void {
+    this.isDropdownOpen = !this.isDropdownOpen;
+  }
+
+  selectCategory(categoryId: string): void {
+    this.selectedCategoryFilter = categoryId;
+    this.isDropdownOpen = false;
+    this.onFilterChange();
+  }
+
+  getSelectedCategoryName(): string {
+    if (this.selectedCategoryFilter === '0') {
+      return 'Tất cả';
+    }
+    const category = this.categories.find(cat => cat.categoryId.toString() === this.selectedCategoryFilter);
+    return category ? category.name : 'Tất cả';
+  }
+
+  // Form category dropdown methods
+  toggleCategoryDropdown(): void {
+    this.isCategoryDropdownOpen = !this.isCategoryDropdownOpen;
+  }
+
+  selectFormCategory(categoryId: number | null): void {
+    this.courseForm.categoryId = categoryId || 0;
+    this.isCategoryDropdownOpen = false;
+  }
+
+  getSelectedCategoryFormName(): string {
+    if (!this.courseForm.categoryId) {
+      return 'Chọn danh mục';
+    }
+    const category = this.categories.find(cat => cat.categoryId === this.courseForm.categoryId);
+    return category ? category.name : 'Chọn danh mục';
+  }
+
+  // Edit form category dropdown methods
+  toggleEditCategoryDropdown(): void {
+    this.isEditCategoryDropdownOpen = !this.isEditCategoryDropdownOpen;
+  }
+
+  selectEditCategory(categoryId: number): void {
+    if (this.selectedCourse) {
+      this.selectedCourse.categoryId = categoryId;
+    }
+    this.isEditCategoryDropdownOpen = false;
+  }
+
+  getSelectedEditCategoryName(): string {
+    if (!this.selectedCourse?.categoryId) {
+      return 'Chọn danh mục';
+    }
+    const category = this.categories.find(cat => cat.categoryId === this.selectedCourse!.categoryId);
+    return category ? category.name : 'Chọn danh mục';
+  }
+
+  // Close dropdown when clicking outside
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    const dropdown = target.closest('.category-filter-wrapper');
+    const formDropdown = target.closest('.form-dropdown-wrapper');
+    
+    if (!dropdown) {
+      this.isDropdownOpen = false;
+    }
+    if (!formDropdown) {
+      this.isCategoryDropdownOpen = false;
+      this.isEditCategoryDropdownOpen = false;
+    }
   }
 
   courseForm = {

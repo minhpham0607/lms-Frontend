@@ -14,8 +14,10 @@ import { FormsModule } from '@angular/forms';
 import { SessionService } from '../../../services/session.service';
 import { CourseService, Course } from '../../../services/course.service';
 import { ExamService } from '../../../services/exam.service';
+import { NotificationService } from '../../../services/notification.service';
 import { ProfileComponent } from '../../../components/profile/profile.component';
 import { SidebarWrapperComponent } from '../../../components/sidebar-wrapper/sidebar-wrapper.component';
+import { NotificationComponent } from '../../../components/notification/notification.component';
 
 // Interface for question data
 export interface QuestionData {
@@ -38,7 +40,7 @@ export interface QuestionData {
   standalone: true,
   templateUrl: './question-manager.component.html',
   styleUrls: ['./question-manager.component.scss'],
-  imports: [CommonModule, FormsModule, RouterModule, ProfileComponent, SidebarWrapperComponent],
+  imports: [CommonModule, FormsModule, RouterModule, ProfileComponent, SidebarWrapperComponent, NotificationComponent],
 })
 export class QuestionManagerComponent implements OnInit, AfterViewInit {
   // Properties for layout and navigation
@@ -64,9 +66,29 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
   // Current question being edited
   public currentQuestion: QuestionData = this.createNewQuestion();
 
+  // For radio button selection of correct answer (only one correct answer allowed)
+  public selectedCorrectAnswerIndex: number | null = null;
+
   // Form state
   public isSaving = false;
   public selectedFile: File | null = null;
+
+  // Modal state
+  public showConfirmModal = false;
+  public confirmModalTitle = '';
+  public confirmModalMessage = '';
+  public confirmModalCallback: (() => void) | null = null;
+
+  // Delete confirmation modal state
+  public showDeleteModal = false;
+  public deleteModalTitle = '';
+  public deleteModalMessage = '';
+  public deleteModalCallback: (() => void) | null = null;
+
+  // Multi-select delete state
+  public isMultiSelectMode = false;
+  public selectedQuestionIds: Set<number> = new Set();
+  public showBulkDeleteModal = false;
 
   // Validation optimization
   private validationTimeout: any = null;
@@ -75,6 +97,181 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
   showDropdown = false;
   isMenuHidden = false;
   isMobile = false;
+
+  // Helper method để hiển thị thông báo
+  private showAlert(message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') {
+    if (type === 'success') {
+      this.notificationService.success('Thành công', message);
+    } else if (type === 'error') {
+      this.notificationService.error('Lỗi', message);
+    } else if (type === 'warning') {
+      this.notificationService.warning('Cảnh báo', message);
+    } else {
+      this.notificationService.info('Thông báo', message);
+    }
+  }
+
+  // Helper method để hiển thị modal xác nhận
+  private displayConfirmModal(title: string, message: string, callback: () => void) {
+    this.confirmModalTitle = title;
+    this.confirmModalMessage = message;
+    this.confirmModalCallback = callback;
+    this.showConfirmModal = true;
+  }
+
+  // Helper method để hiển thị modal xóa
+  private displayDeleteModal(title: string, message: string, callback: () => void) {
+    this.deleteModalTitle = title;
+    this.deleteModalMessage = message;
+    this.deleteModalCallback = callback;
+    this.showDeleteModal = true;
+  }
+
+  // Xử lý xác nhận modal
+  public onConfirmModalOk(): void {
+    this.showConfirmModal = false;
+    if (this.confirmModalCallback) {
+      this.confirmModalCallback();
+      this.confirmModalCallback = null;
+    }
+  }
+
+  // Xử lý hủy modal
+  public onConfirmModalCancel(): void {
+    this.showConfirmModal = false;
+    this.confirmModalCallback = null;
+  }
+
+  // Xử lý xác nhận xóa
+  public onDeleteModalOk(): void {
+    this.showDeleteModal = false;
+    if (this.deleteModalCallback) {
+      this.deleteModalCallback();
+      this.deleteModalCallback = null;
+    }
+  }
+
+  // Xử lý hủy xóa
+  public onDeleteModalCancel(): void {
+    this.showDeleteModal = false;
+    this.deleteModalCallback = null;
+  }
+
+  // Toggle multi-select mode
+  public toggleMultiSelectMode(): void {
+    this.isMultiSelectMode = !this.isMultiSelectMode;
+    if (!this.isMultiSelectMode) {
+      // Clear selections when exiting multi-select mode
+      this.selectedQuestionIds.clear();
+    }
+  }
+
+  // Toggle question selection
+  public toggleQuestionSelection(index: number): void {
+    if (this.selectedQuestionIds.has(index)) {
+      this.selectedQuestionIds.delete(index);
+    } else {
+      this.selectedQuestionIds.add(index);
+    }
+  }
+
+  // Check if question is selected
+  public isQuestionSelected(index: number): boolean {
+    return this.selectedQuestionIds.has(index);
+  }
+
+  // Select all questions
+  public selectAllQuestions(): void {
+    for (let i = 0; i < this.questions.length; i++) {
+      this.selectedQuestionIds.add(i);
+    }
+  }
+
+  // Deselect all questions
+  public deselectAllQuestions(): void {
+    this.selectedQuestionIds.clear();
+  }
+
+  // Delete selected questions
+  public deleteSelectedQuestions(): void {
+    if (this.selectedQuestionIds.size === 0) {
+      this.showAlert('Vui lòng chọn ít nhất một câu hỏi để xóa!', 'warning');
+      return;
+    }
+
+    // Check if trying to delete all questions in essay quiz
+    if (this.quizType === 'ESSAY' && this.selectedQuestionIds.size >= this.questions.length) {
+      this.showAlert('Đề thi tự luận phải có ít nhất 1 câu hỏi!', 'warning');
+      return;
+    }
+
+    const message = `Bạn có chắc chắn muốn xóa ${this.selectedQuestionIds.size} câu hỏi đã chọn?`;
+    this.displayDeleteModal('Xác nhận xóa nhiều câu hỏi', message, () => {
+      this.performBulkDelete();
+    });
+  }
+
+  // Perform bulk delete operation
+  private performBulkDelete(): void {
+    const selectedIndices = Array.from(this.selectedQuestionIds).sort((a, b) => b - a); // Sort in descending order for safe deletion
+    let deletedCount = 0;
+    let totalToDelete = selectedIndices.length;
+
+    selectedIndices.forEach((index) => {
+      const questionToDelete = this.questions[index];
+      
+      if (questionToDelete.questionId) {
+        // Delete from database
+        this.examService.deleteQuestion(questionToDelete.questionId).subscribe({
+          next: (response: any) => {
+            console.log('✅ Question deleted from database:', response);
+            this.removeQuestionFromListSilently(index);
+            deletedCount++;
+            this.checkBulkDeleteComplete(deletedCount, totalToDelete);
+          },
+          error: (error: any) => {
+            console.error('❌ Error deleting question from database:', error);
+            this.removeQuestionFromListSilently(index);
+            deletedCount++;
+            this.checkBulkDeleteComplete(deletedCount, totalToDelete);
+          }
+        });
+      } else {
+        // Just remove from local list
+        this.removeQuestionFromListSilently(index);
+        deletedCount++;
+        this.checkBulkDeleteComplete(deletedCount, totalToDelete);
+      }
+    });
+  }
+
+  // Check if bulk delete is complete
+  private checkBulkDeleteComplete(deletedCount: number, totalToDelete: number): void {
+    if (deletedCount === totalToDelete) {
+      this.selectedQuestionIds.clear();
+      this.isMultiSelectMode = false;
+      this.showAlert(`Đã xóa thành công ${totalToDelete} câu hỏi!`, 'success');
+      
+      // Reset current question if needed
+      if (this.questions.length > 0) {
+        this.currentQuestionIndex = Math.max(0, Math.min(this.currentQuestionIndex, this.questions.length - 1));
+        this.currentQuestion = { ...this.questions[this.currentQuestionIndex] };
+        this.updateSelectedCorrectAnswerIndex();
+      } else {
+        this.currentQuestion = this.createNewQuestion();
+        this.currentQuestionIndex = 0;
+        this.isEditing = false;
+      }
+    }
+  }
+
+  // Remove question from list without UI updates (for bulk operations)
+  private removeQuestionFromListSilently(index: number): void {
+    if (index >= 0 && index < this.questions.length) {
+      this.questions.splice(index, 1);
+      console.log(`🗑️ Question removed from list silently, remaining: ${this.questions.length}`);
+    }
+  }
 
   @ViewChild('leftMenu', { static: false }) leftMenu!: ElementRef;
   @ViewChild('toggleBtn', { static: false }) toggleBtn!: ElementRef;
@@ -88,6 +285,7 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
     private courseService: CourseService,
     private examService: ExamService,
     public sessionService: SessionService,
+    private notificationService: NotificationService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) { }
 
@@ -171,6 +369,9 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
           this.currentQuestion = { ...this.questions[0] };
           this.isEditing = true;
           
+          // Update selected correct answer index for loaded question
+          this.updateSelectedCorrectAnswerIndex();
+          
           console.log(`✅ Loaded ${this.questions.length} existing questions`);
         } else {
           // No existing questions, add first new question
@@ -197,6 +398,9 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
           this.currentQuestionIndex = 0;
           this.currentQuestion = { ...this.questions[0] };
           this.isEditing = true;
+          
+          // Update selected correct answer index for loaded question
+          this.updateSelectedCorrectAnswerIndex();
           
           console.log(`✅ Loaded ${this.questions.length} existing questions`);
         } else {
@@ -259,6 +463,9 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
 
   // Create new question template
   private createNewQuestion(): QuestionData {
+    // Reset selected correct answer index when creating new question
+    this.selectedCorrectAnswerIndex = null;
+    
     return {
       id: 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
       quizId: this.quizId || 0,
@@ -299,7 +506,7 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
   addNewQuestion(): void {
     // Ngăn thêm câu hỏi mới nếu là đề thi tự luận
     if (this.quizType === 'ESSAY') {
-      alert('Đề thi tự luận chỉ được phép có 1 câu hỏi duy nhất!');
+      this.showAlert('Đề thi tự luận chỉ được phép có 1 câu hỏi duy nhất!', 'warning');
       return;
     }
 
@@ -330,6 +537,9 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
     this.currentQuestion = { ...newQuestion };
     this.isEditing = false;
     
+    // Reset selected correct answer index for first question
+    this.selectedCorrectAnswerIndex = null;
+    
     console.log(`➕ Added first question ${this.questions.length} (Index: ${this.currentQuestionIndex})`);
     console.log(`📝 First question data:`, this.currentQuestion);
   }
@@ -341,6 +551,9 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
     this.currentQuestionIndex = this.questions.length - 1;
     this.currentQuestion = { ...newQuestion };
     this.isEditing = false;
+    
+    // Reset selected correct answer index for new question
+    this.selectedCorrectAnswerIndex = null;
     
     console.log(`➕ Added new question ${this.questions.length} (Index: ${this.currentQuestionIndex})`);
     console.log(`📝 New question data:`, this.currentQuestion);
@@ -382,6 +595,10 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
       // New question not in database yet, use local data
       this.currentQuestion = { ...selectedQuestion };
       this.isEditing = true;
+      
+      // Update selected correct answer index
+      this.updateSelectedCorrectAnswerIndex();
+      
       console.log(`🔄 Switched to local question ${index + 1}`);
     }
   }
@@ -400,6 +617,9 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
         this.currentQuestion = { ...updatedQuestion };
         this.isEditing = true;
         
+        // Update selected correct answer index
+        this.updateSelectedCorrectAnswerIndex();
+        
         console.log(`🔄 Switched to database question ${index + 1}`, updatedQuestion);
       },
       error: (error: any) => {
@@ -408,10 +628,14 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
         // Fallback to local data if database call fails
         this.currentQuestion = { ...this.questions[index] };
         this.isEditing = true;
+        
+        // Update selected correct answer index
+        this.updateSelectedCorrectAnswerIndex();
+        
         console.log(`🔄 Fallback: Switched to local question ${index + 1}`);
         
         // Show warning to user
-        alert('Không thể tải câu hỏi từ database. Hiển thị dữ liệu local.');
+        this.showAlert('Không thể tải câu hỏi từ database. Hiển thị dữ liệu local.', 'warning');
       }
     });
   }
@@ -424,7 +648,7 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
     console.log('questionText length:', this.currentQuestion.questionText?.length);
     
     if (!this.isFormValid()) {
-      alert('Vui lòng điền đầy đủ thông tin câu hỏi!');
+      this.showAlert('Vui lòng điền đầy đủ thông tin câu hỏi!', 'warning');
       console.log('❌ Form validation failed!');
       return;
     }
@@ -433,14 +657,14 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
       // Update existing question
       this.questions[this.currentQuestionIndex] = { ...this.currentQuestion };
       console.log(`💾 Updated question ${this.currentQuestionIndex + 1}`);
-      alert('Câu hỏi đã được cập nhật!');
+      this.showAlert('Câu hỏi đã được cập nhật!', 'success');
     } else {
       // Add new question to list
       this.questions.push({ ...this.currentQuestion });
       this.currentQuestionIndex = this.questions.length - 1;
       this.isEditing = true;
       console.log(`💾 Saved new question ${this.questions.length}`);
-      alert('Câu hỏi đã được lưu!');
+      this.showAlert('Câu hỏi đã được lưu!', 'success');
     }
     
     console.log('Final questions array:', this.questions);
@@ -619,34 +843,40 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
   deleteQuestion(index: number): void {
     // Ngăn xóa câu hỏi cuối cùng trong đề thi tự luận
     if (this.quizType === 'ESSAY' && this.questions.length === 1) {
-      alert('Đề thi tự luận phải có ít nhất 1 câu hỏi!');
+      this.showAlert('Đề thi tự luận phải có ít nhất 1 câu hỏi!', 'warning');
       return;
     }
 
-    if (confirm(`Bạn có chắc chắn muốn xóa câu hỏi ${index + 1}?`)) {
-      const questionToDelete = this.questions[index];
+    const message = `Bạn có chắc chắn muốn xóa câu hỏi ${index + 1}?`;
+    this.displayDeleteModal('Xác nhận xóa câu hỏi', message, () => {
+      this.performDeleteQuestion(index);
+    });
+  }
+
+  // Perform the actual delete operation
+  private performDeleteQuestion(index: number): void {
+    const questionToDelete = this.questions[index];
+    
+    // If question exists in database, delete from backend first
+    if (questionToDelete.questionId) {
+      console.log('🗑️ Deleting question from database:', questionToDelete.questionId);
       
-      // If question exists in database, delete from backend first
-      if (questionToDelete.questionId) {
-        console.log('🗑️ Deleting question from database:', questionToDelete.questionId);
-        
-        this.examService.deleteQuestion(questionToDelete.questionId).subscribe({
-          next: (response: any) => {
-            console.log('✅ Question deleted from database:', response);
-            this.removeQuestionFromList(index);
-            alert('Câu hỏi đã được xóa khỏi cơ sở dữ liệu!');
-          },
-          error: (error: any) => {
-            console.error('❌ Error deleting question from database:', error);
-            // Still remove from local list even if backend delete fails
-            this.removeQuestionFromList(index);
-            alert('Đã xóa câu hỏi khỏi danh sách (có thể chưa xóa khỏi cơ sở dữ liệu)');
-          }
-        });
-      } else {
-        // Question not in database yet, just remove from list
-        this.removeQuestionFromList(index);
-      }
+      this.examService.deleteQuestion(questionToDelete.questionId).subscribe({
+        next: (response: any) => {
+          console.log('✅ Question deleted from database:', response);
+          this.removeQuestionFromList(index);
+          this.showAlert('Câu hỏi đã được xóa khỏi cơ sở dữ liệu!', 'success');
+        },
+        error: (error: any) => {
+          console.error('❌ Error deleting question from database:', error);
+          // Still remove from local list even if backend delete fails
+          this.removeQuestionFromList(index);
+          this.showAlert('Đã xóa câu hỏi khỏi danh sách (có thể chưa xóa khỏi cơ sở dữ liệu)', 'warning');
+        }
+      });
+    } else {
+      // Question not in database yet, just remove from list
+      this.removeQuestionFromList(index);
     }
   }
 
@@ -742,6 +972,37 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
         this.currentQuestion.options.length > 2) {
       this.currentQuestion.options.splice(index, 1);
       this.currentQuestion.correctAnswers.splice(index, 1);
+      
+      // Update selected correct answer index if it was affected
+      if (this.selectedCorrectAnswerIndex === index) {
+        this.selectedCorrectAnswerIndex = null;
+      } else if (this.selectedCorrectAnswerIndex !== null && this.selectedCorrectAnswerIndex > index) {
+        this.selectedCorrectAnswerIndex--;
+      }
+    }
+  }
+
+  // Handle correct answer selection (only one allowed)
+  onCorrectAnswerChange(selectedIndex: number): void {
+    // Reset all correct answers to false
+    if (this.currentQuestion.correctAnswers) {
+      this.currentQuestion.correctAnswers.fill(false);
+      // Set only the selected one to true
+      this.currentQuestion.correctAnswers[selectedIndex] = true;
+      this.selectedCorrectAnswerIndex = selectedIndex;
+    }
+    this.onQuestionContentChange();
+  }
+
+  // Update selected correct answer index based on current question
+  private updateSelectedCorrectAnswerIndex(): void {
+    this.selectedCorrectAnswerIndex = null;
+    
+    if (this.currentQuestion.correctAnswers) {
+      const correctIndex = this.currentQuestion.correctAnswers.findIndex(answer => answer === true);
+      if (correctIndex !== -1) {
+        this.selectedCorrectAnswerIndex = correctIndex;
+      }
     }
   }
 
@@ -751,14 +1012,14 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
     if (file) {
       // Validate file size (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
-        alert('File size must be less than 10MB');
+        this.showAlert('File size must be less than 10MB', 'error');
         return;
       }
 
       // Validate file type
       const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
       if (!allowedTypes.includes(file.type)) {
-        alert('Only images, PDF, and Word documents are allowed');
+        this.showAlert('Only images, PDF, and Word documents are allowed', 'error');
         return;
       }
 
@@ -820,19 +1081,25 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
     this.cleanupEmptyQuestions();
 
     if (this.questions.length === 0) {
-      alert('Chưa có câu hỏi nào để lưu!');
+      this.showAlert('Chưa có câu hỏi nào để lưu!', 'warning');
       return;
     }
 
     // Count incomplete questions
     const incompleteQuestions = this.questions.filter(q => !this.isQuestionComplete(q));
     if (incompleteQuestions.length > 0) {
-      const message = `Có ${incompleteQuestions.length} câu hỏi chưa hoàn thành. Chỉ những câu hỏi hoàn thành mới được lưu. Tiếp tục?`;
-      if (!confirm(message)) {
-        return;
-      }
+      const message = `Có ${incompleteQuestions.length} câu hỏi chưa hoàn thành. Chỉ những câu hỏi hoàn thành mới được lưu.`;
+      this.displayConfirmModal('Xác nhận lưu câu hỏi', message, () => {
+        this.performSaveAllQuestions();
+      });
+      return;
     }
 
+    this.performSaveAllQuestions();
+  }
+
+  // Perform the actual save operation
+  private performSaveAllQuestions(): void {
     this.isSaving = true;
     console.log('💾 Saving all questions:', this.questions);
 
@@ -872,7 +1139,7 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
         this.proceedWithSaving();
       }).catch((error) => {
         console.error('❌ File upload failed:', error);
-        alert('Lưu file thất bại: ' + error.message);
+        this.showAlert('Lưu file thất bại: ' + error.message, 'error');
         this.isSaving = false;
       });
     } else {
@@ -967,7 +1234,7 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
     if (totalOperations === 0) {
       console.log('✅ All questions already saved and up-to-date');
       this.isSaving = false;
-      alert(`Tất cả câu hỏi đã được lưu!`);
+      this.showAlert(`Tất cả câu hỏi đã được lưu!`, 'info');
       return;
     }
 
@@ -1048,7 +1315,7 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
     if (completedCount === totalOperations) {
       this.isSaving = false;
       console.log('✅ All question operations completed');
-      alert(`Đã lưu thành công tất cả câu hỏi!`);
+      this.showAlert(`Đã lưu thành công tất cả câu hỏi!`, 'success');
       this.navigateBackToQuiz();
     }
   }
