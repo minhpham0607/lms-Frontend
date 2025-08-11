@@ -46,7 +46,32 @@
   z-index: 50;
 }
 
-/* Breadcrumb */
+// Breadcrumb styling
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #018ED5;
+  font-size: 1.125rem;
+  font-weight: 400;
+  margin-bottom: 1rem;
+  user-select: none;
+}
+
+.breadcrumb .fa-bars {
+  font-size: 24px;
+  color: #8bb3d8;
+  background: none;
+  border-radius: 0;
+  padding: 0;
+  transition: none;
+}
+
+.breadcrumb .fa-bars:hover {
+  color: #5a8fcf;
+  background: none;
+}
+
 .breadcrumb {
   display: flex;
   align-items: center;
@@ -57,9 +82,12 @@
   margin-bottom: 0.5rem;
   user-select: none;
   flex-wrap: nowrap;
+  /* Prevent wrapping */
   white-space: nowrap;
-  
-  > * {
+  /* Keep content on single line */
+
+  /* Force all children to display inline */
+  >* {
     display: inline-block;
   }
 }
@@ -74,39 +102,112 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  
-  &:hover {
-    color: #5a8fcf;
-  }
+}
+
+.breadcrumb button:hover {
+  color: #5a8fcf;
+}
+
+.breadcrumb i {
+  cursor: pointer;
 }
 
 .breadcrumb-nav {
   display: flex;
   align-items: center;
   gap: 12px;
+  /* Increased spacing between breadcrumb elements */
   margin-left: 5px;
   font-size: 18px;
   flex-wrap: nowrap;
+  /* Prevent wrapping to new lines */
   white-space: nowrap;
+  /* Prevent text wrapping */
 }
 
 .breadcrumb-item {
   white-space: nowrap;
+  /* Prevent text wrapping */
   display: inline-block;
-  
+  /* Ensure inline display */
+
   &.course-name {
     color: #3371ce;
     font-weight: 500;
   }
-  
+
   &.current-page {
-    color: #64748b;
+    color: #666;
+    font-weight: 400;
   }
 }
 
 .breadcrumb-separator {
-  color: #64748b;
+  color: #999;
+  font-weight: 400;
+  white-space: nowrap;
+  /* Prevent wrapping */
+  display: inline-block;
+  /* Ensure inline display */
+  padding: 0 4px;
+  /* Add horizontal padding around the separator */
 }
+
+.breadcrumb a {
+  color: #3b8ed0;
+  font-weight: 400;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 20px;
+}
+
+.breadcrumb span[aria-hidden="true"] {
+  color: #999999;
+  font-size: 24px;
+  line-height: 24px;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+.breadcrumb .current {
+  color: #018ED5;
+  font-size: 20px;
+  font-style: regular;
+  font-family: Istok Web, sans-serif;
+}
+
+.breadcrumb .item {
+  color: #000000;
+  font-size: 20px;
+  font-style: regular;
+  font-family: Istok Web, sans-serif;
+}
+
+.breadcrumb {
+  font-size: 20px;
+  gap: 0.25rem;
+  flex-direction: row !important;
+  /* Force horizontal layout */
+  flex-wrap: nowrap !important;
+  /* Prevent wrapping */
+}
+
+.breadcrumb-nav {
+  flex-direction: row !important;
+  /* Force horizontal layout */
+  flex-wrap: nowrap !important;
+  /* Prevent wrapping */
+}
+
 
 /* Content structure */
 .content-wrapper {
@@ -253,10 +354,25 @@
           box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
         
+        &:disabled {
+          background-color: #f3f4f6;
+          color: #6b7280;
+          cursor: not-allowed;
+          opacity: 0.6;
+        }
+        
         &::placeholder {
           color: #9ca3af;
           font-style: italic;
         }
+      }
+      
+      .help-text {
+        font-size: 0.75rem;
+        color: #6b7280;
+        font-style: italic;
+        margin-top: 0.25rem;
+        display: block;
       }
       
       textarea {
@@ -452,16 +568,6 @@ fieldset {
     padding: 12px;
   }
   
-  .breadcrumb {
-    font-size: 1rem;
-    padding: 0.5rem;
-  }
-  
-  .breadcrumb-nav {
-    font-size: 16px;
-    gap: 8px;
-  }
-  
   .form-container {
     padding: 1rem;
   }
@@ -488,11 +594,6 @@ fieldset {
   .course-content {
     padding: 8px;
     border-radius: 4px;
-  }
-  
-  .breadcrumb {
-    font-size: 0.875rem;
-    gap: 0.25rem;
   }
   
   .form-container {

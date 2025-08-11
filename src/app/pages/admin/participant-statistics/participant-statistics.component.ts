@@ -1468,4 +1468,13 @@ export class ParticipantStatisticsComponent implements OnInit {
     this.setupAllEnrollments();
     console.log('✅ Course titles fixed');
   }
+
+  getDisplayRole(role: string): string {
+    switch (role?.toLowerCase()) {
+      case 'admin': return 'Quản trị viên';
+      case 'instructor': return 'Giảng viên';
+      case 'student': return 'Học viên';
+      default: return role || 'Admin';
+    }
+  }
 }

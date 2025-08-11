@@ -337,10 +337,15 @@ export class CoursesComponent implements OnInit {
     this.avatarUrl = userInfo.avatarUrl; // ✅ Sử dụng avatar mặc định từ service
   }
 
-  // Format role để hiển thị (chữ cái đầu viết hoa)
+  // Format role để hiển thị bằng tiếng Việt
   getDisplayRole(role: string): string {
     const cleanRole = role.replace('ROLE_', '').toLowerCase();
-    return cleanRole.charAt(0).toUpperCase() + cleanRole.slice(1);
+    switch (cleanRole) {
+      case 'admin': return 'Quản trị viên';
+      case 'instructor': return 'Giảng viên';
+      case 'student': return 'Học viên';
+      default: return cleanRole.charAt(0).toUpperCase() + cleanRole.slice(1);
+    }
   }
 
   // Profile component event handlers

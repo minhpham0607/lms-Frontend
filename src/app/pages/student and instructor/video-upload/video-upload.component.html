@@ -7,12 +7,8 @@
   <div class="main-content">
     <!-- Profile component -->
     <div class="profile-header">
-      <app-profile
-        [username]="username"
-        [role]="getDisplayRole(userRole)"
-        [avatarUrl]="avatarUrl"
-        (profileUpdate)="onProfileUpdate()"
-        (logout)="onLogout()">
+      <app-profile [username]="username" [role]="getDisplayRole(userRole)" [avatarUrl]="avatarUrl"
+        (profileUpdate)="onProfileUpdate()" (logout)="onLogout()">
       </app-profile>
     </div>
 
@@ -26,7 +22,7 @@
             {{ courseInfo?.title || ('Course ' + courseId) }}
           </span>
           <span class="breadcrumb-separator">></span>
-          <span class="breadcrumb-item current-page">Video</span>
+          <span class="breadcrumb-item current-page">{{ currentPage }}</span>
         </nav>
       </div>
 
@@ -82,112 +78,74 @@
               <div class="header-section">
                 <h2>Upload Video Bài Giảng</h2>
                 <div class="header-actions">
-                  <button
-                    type="button"
-                    class="btn btn-secondary view-all-videos-btn"
-                    (click)="navigateToLearnOnline()">
+                  <button type="button" class="btn btn-secondary view-all-videos-btn" (click)="navigateToLearnOnline()">
                     <i class="fas fa-video"></i> Xem tất cả video
                   </button>
                 </div>
               </div>
               <form (ngSubmit)="onSubmit()" #uploadForm="ngForm">
-    <div class="form-group">
-      <label for="title">Tên chương</label>
-      <input
-        type="text"
-        id="title"
-        name="title"
-        [(ngModel)]="title"
-        placeholder="VD: Math Chapter 11"
-        required />
-    </div>
-    <div class="form-group">
-      <label for="courseId">Khóa học</label>
-      <select
-        id="courseId"
-        name="courseId"
-        [(ngModel)]="courseId"
-        (change)="onCourseChange()"
-        required
-        [disabled]="loading || courses.length === 0">
-        <option value="" disabled>
-          {{ loading ? 'Đang tải khóa học...' : (courses.length === 0 ? 'Không có khóa học nào' : 'Chọn khóa học') }}
-        </option>
-        <option *ngFor="let course of courses" [value]="course.courseId">
-          {{ course.title }} (ID: {{ course.courseId }})
-        </option>
-      </select>
-      <small *ngIf="courses.length === 0 && !loading" class="help-text">
-        Chỉ instructor mới có thể upload video cho khóa học của mình.
-      </small>
-    </div>
-    <div class="form-group">
-      <label for="moduleId">Module *</label>
-      <select
-        id="moduleId"
-        name="moduleId"
-        [(ngModel)]="moduleId"
-        (change)="onModuleChange()"
-        [disabled]="!courseId || modules.length === 0"
-        required>
-        <option value="" disabled>-- Chọn Module --</option>
-        <option *ngFor="let module of modules" [value]="module.moduleId">
-          {{ module.orderNumber }}. {{ module.title }}
-        </option>
-      </select>
-      <small class="help-text">
-        Video phải thuộc về một module cụ thể. Chọn module mà video này sẽ thuộc về.
-      </small>
-    </div>
-    <div class="form-group">
-      <label for="description">Mô tả</label>
-      <textarea
-        id="description"
-        name="description"
-        [(ngModel)]="description"
-        placeholder="Mô tả nội dung video..."
-        rows="3"
-        required></textarea>
-    </div>
-    <div class="form-group">
-      <label for="published">Trạng thái xuất bản</label>
-      <select
-        id="published"
-        name="published"
-        [(ngModel)]="published"
-        required>
-        <option [value]="false">Bản nháp (Draft)</option>
-        <option [value]="true">Xuất bản (Published)</option>
-      </select>
-      <small class="help-text">
-        Chọn "Bản nháp" để lưu video nhưng chưa hiển thị cho học viên. Chọn "Xuất bản" để video hiển thị ngay cho học viên.
-      </small>
-    </div>
-    <div class="form-group">
-      <label for="video">Chọn video</label>
-      <input
-        type="file"
-        id="video"
-        name="video"
-        type="file" (change)="onFileSelected($event)"
-        accept="video/*"
-        required />
-    </div>
-    <button
-      type="submit"
-      class="submit-btn"
-      [disabled]="loading || !courseId || !moduleId || courses.length === 0 || modules.length === 0">
-      {{ loading ? 'Đang tải lên...' : 'Tải lên' }}
-    </button>
+                <div class="form-group">
+                  <label for="title">Tên chương</label>
+                  <input type="text" id="title" name="title" [(ngModel)]="title" placeholder="VD: Math Chapter 11"
+                    required />
+                </div>
+                <!-- Course selection hidden since courseId comes from URL -->
+                <div class="form-group" style="display: none;">
+                  <label for="courseId">Khóa học</label>
+                  <select id="courseId" name="courseId" [(ngModel)]="courseId" (change)="onCourseChange()" required>
+                    <option *ngFor="let course of courses" [value]="course.courseId">
+                      {{ course.title }} (ID: {{ course.courseId }})
+                    </option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="moduleId">Module *</label>
+                  <select id="moduleId" name="moduleId" [(ngModel)]="moduleId" (change)="onModuleChange()"
+                    [disabled]="!courseId || modules.length === 0" required>
+                    <option value="" disabled>-- Chọn Module --</option>
+                    <option *ngFor="let module of modules" [value]="module.moduleId">
+                      {{ module.orderNumber }}. {{ module.title }}
+                    </option>
+                  </select>
+                  <small class="help-text">
+                    Video phải thuộc về một module cụ thể. Chọn module mà video này sẽ thuộc về.
+                  </small>
+                </div>
+                <div class="form-group">
+                  <label for="description">Mô tả</label>
+                  <textarea id="description" name="description" [(ngModel)]="description"
+                    placeholder="Mô tả nội dung video..." rows="3" required></textarea>
+                </div>
+                <div class="form-group">
+                  <label for="published">Trạng thái xuất bản</label>
+                  <select id="published" name="published" [(ngModel)]="published" required>
+                    <option [value]="false">Bản nháp (Draft)</option>
+                    <option [value]="true">Xuất bản (Published)</option>
+                  </select>
+                  <small class="help-text">
+                    Chọn "Bản nháp" để lưu video nhưng chưa hiển thị cho học viên. Chọn "Xuất bản" để video hiển thị
+                    ngay cho học viên.
+                  </small>
+                </div>
+                <div class="form-group">
+                  <label for="video">Chọn video</label>
+                  <input type="file" id="video" name="video" type="file" (change)="onFileSelected($event)"
+                    accept="video/*" required />
+                </div>
+                <button type="submit" class="submit-btn"
+                  [disabled]="loading || !courseId || !moduleId || courses.length === 0 || modules.length === 0">
+                  {{ loading ? 'Đang tải lên...' : 'Tải lên' }}
+                </button>
 
-    <!-- Information messages -->
-    <div class="info-message" *ngIf="!loading && modules.length === 0 && courseId" style="color: #f0ad4e; font-size: 14px; margin-top: 10px;">
-      ⚠️ Khóa học này chưa có module. Cần tạo module trước khi upload video.
-    </div>
+                <!-- Information messages -->
+                <div class="info-message" *ngIf="!loading && modules.length === 0 && courseId"
+                  style="color: #f0ad4e; font-size: 14px; margin-top: 10px;">
+                  ⚠️ Khóa học này chưa có module. Cần tạo module trước khi upload video.
+                </div>
 
-    <div class="success-message" *ngIf="successMessage">
-      ✅ Video đã được tải lên thành công! Bạn có thể tiếp tục upload video khác.
-    </div>
+                <div class="success-message" *ngIf="successMessage">
+                  ✅ Video đã được tải lên thành công! Bạn có thể tiếp tục upload video khác.
+                </div>
               </form>
             </div>
           </div>

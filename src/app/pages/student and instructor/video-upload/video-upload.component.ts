@@ -60,6 +60,7 @@ export class VideoUploadComponent implements OnInit {
 
   ngOnInit() {
     this.initializeUserProfile();
+    
     // Get courseId from route params
     this.route.queryParams.subscribe(params => {
       if (params['courseId']) {
@@ -67,9 +68,14 @@ export class VideoUploadComponent implements OnInit {
         console.log('📚 Course ID from route:', this.courseId);
         this.loadCourseInfo();
         this.loadModules(); // Load modules for the specific course
+      } else {
+        console.warn('⚠️ No courseId provided in URL');
+        this.showAlert('Không tìm thấy ID khóa học trong URL', 'warning');
       }
     });
-    this.loadUserCourses();
+    
+    // Don't load user courses since courseId is from URL
+    // this.loadUserCourses();
   }
 
   // Initialize user profile
@@ -121,8 +127,13 @@ export class VideoUploadComponent implements OnInit {
     }
   }
 
-  // Load courses của user hiện tại (chỉ instructor mới có courses để upload)
+  // Load courses của user hiện tại - DISABLED since courseId comes from URL
   loadUserCourses() {
+    // No longer needed since courseId is provided via URL route params
+    console.log('📝 Course loading disabled - using courseId from URL:', this.courseId);
+    return;
+    
+    /*
     this.loading = true;
     this.apiService.getCoursesByUser().subscribe({
       next: (courses) => {
@@ -147,6 +158,7 @@ export class VideoUploadComponent implements OnInit {
         this.loading = false;
       }
     });
+    */
   }
 
   // Load modules when course is selected
@@ -175,11 +187,12 @@ export class VideoUploadComponent implements OnInit {
     });
   }
 
-  // Handle course selection change
+  // Handle course selection change - DISABLED since courseId is from URL
   onCourseChange(): void {
-    console.log('📚 Course changed to:', this.courseId);
-    this.moduleId = null; // Reset module selection
-    this.loadModules(); // Load modules for new course
+    // No longer needed since courseId is fixed from URL
+    console.log('📚 Course change disabled - courseId is from URL:', this.courseId);
+    // this.moduleId = null; // Reset module selection
+    // this.loadModules(); // Load modules for new course
   }
 
   // Handle module selection change
@@ -291,11 +304,22 @@ export class VideoUploadComponent implements OnInit {
 
   navigateToGrades(): void {
     if (this.courseId) {
-      if (this.isInstructor) {
+      // Debug role checking for grades
+      const role = this.sessionService.getUserRole();
+      console.log('🔍 VideoUpload->Grades Navigation Debug:', {
+        role: role,
+        isInstructor: this.isInstructor,
+        isAdmin: this.sessionService.isAdmin(),
+        courseId: this.courseId
+      });
+      
+      if (this.isInstructor || this.sessionService.isAdmin()) {
         // Navigate to instructor grades management page
+        console.log('👨‍🏫 Navigating to grades management for instructor/admin');
         this.router.navigate(['/grades'], { queryParams: { courseId: this.courseId } });
       } else {
         // Navigate to student grades view page
+        console.log('👨‍🎓 Navigating to student-grades for student');
         this.router.navigate(['/student-grades'], { queryParams: { courseId: this.courseId } });
       }
     }
@@ -309,12 +333,23 @@ export class VideoUploadComponent implements OnInit {
 
   navigateToVideo(): void {
     if (this.courseId) {
+      // Debug role checking for video
+      const role = this.sessionService.getUserRole();
+      console.log('🔍 VideoUpload->Video Navigation Debug:', {
+        role: role,
+        isInstructor: this.isInstructor,
+        isAdmin: this.sessionService.isAdmin(),
+        courseId: this.courseId
+      });
+      
       // Check if user is instructor/admin
-      if (this.isInstructor) {
+      if (this.isInstructor || this.sessionService.isAdmin()) {
         // Navigate to video upload page for instructors
+        console.log('👨‍🏫 Staying on video-upload for instructor/admin');
         this.router.navigate(['/video-upload'], { queryParams: { courseId: this.courseId } });
       } else {
         // Navigate to learn online page for students
+        console.log('👨‍🎓 Navigating to learn-online for student');
         this.router.navigate(['/learn-online'], { queryParams: { courseId: this.courseId } });
       }
     }

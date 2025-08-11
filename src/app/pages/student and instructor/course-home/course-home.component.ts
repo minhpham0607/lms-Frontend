@@ -92,10 +92,15 @@ export class CourseHomeComponent implements OnInit {
     this.avatarUrl = userInfo.avatarUrl;
   }
 
-  // Format role để hiển thị (chữ cái đầu viết hoa)
+  // Format role để hiển thị bằng tiếng Việt
   getDisplayRole(role: string): string {
     const cleanRole = role.replace('ROLE_', '').toLowerCase();
-    return cleanRole.charAt(0).toUpperCase() + cleanRole.slice(1);
+    switch (cleanRole) {
+      case 'admin': return 'Quản trị viên';
+      case 'instructor': return 'Giảng viên';
+      case 'student': return 'Học viên';
+      default: return cleanRole.charAt(0).toUpperCase() + cleanRole.slice(1);
+    }
   }
 
   onProfileUpdate(): void {
@@ -244,10 +249,22 @@ export class CourseHomeComponent implements OnInit {
 
   navigateToGrades(): void {
     if (this.courseId) {
+      // Debug role checking for grades
+      const role = this.sessionService.getUserRole();
+      console.log('🔍 Grades Navigation Debug:', {
+        role: role,
+        isStudent: this.isStudent(),
+        isInstructor: this.isInstructor(),
+        isAdmin: this.isAdmin(),
+        courseId: this.courseId
+      });
+      
       // Students go to student-grades, instructors/admins go to grades management
       if (this.isStudent()) {
+        console.log('👨‍🎓 Navigating to student-grades for student');
         this.router.navigate(['/student-grades'], { queryParams: { courseId: this.courseId } });
       } else {
+        console.log('👨‍🏫 Navigating to grades management for instructor/admin');
         this.router.navigate(['/grades'], { queryParams: { courseId: this.courseId } });
       }
     } else {
@@ -265,12 +282,23 @@ export class CourseHomeComponent implements OnInit {
 
   navigateToVideo(): void {
     if (this.courseId) {
+      // Debug role checking
+      const role = this.sessionService.getUserRole();
+      console.log('🔍 Navigation Debug:', {
+        role: role,
+        isInstructor: this.isInstructor(),
+        isAdmin: this.isAdmin(),
+        courseId: this.courseId
+      });
+      
       // Check if user is instructor/admin
       if (this.isInstructor() || this.isAdmin()) {
         // Navigate to video upload page for instructors
+        console.log('👨‍🏫 Navigating to video-upload for instructor/admin');
         this.router.navigate(['/video-upload'], { queryParams: { courseId: this.courseId } });
       } else {
         // Navigate to learn online page for students
+        console.log('👨‍🎓 Navigating to learn-online for student');
         this.router.navigate(['/learn-online'], { queryParams: { courseId: this.courseId } });
       }
     } else {
@@ -300,7 +328,7 @@ export class CourseHomeComponent implements OnInit {
   // Check if user can manage content (instructor/admin)
   canManageContent(): boolean {
     const role = this.sessionService.getUserRole();
-    return role === 'ROLE_INSTRUCTOR' || role === 'ROLE_ADMIN';
+    return role === 'ROLE_instructor' || role === 'ROLE_admin';
   }
 
   // Check if current user is student
@@ -312,13 +340,13 @@ export class CourseHomeComponent implements OnInit {
   // Check if current user is instructor
   isInstructor(): boolean {
     const role = this.sessionService.getUserRole();
-    return role === 'ROLE_INSTRUCTOR';
+    return role === 'ROLE_instructor';
   }
 
   // Check if current user is admin
   isAdmin(): boolean {
     const role = this.sessionService.getUserRole();
-    return role === 'ROLE_ADMIN';
+    return role === 'ROLE_admin';
   }
 
   // User management methods

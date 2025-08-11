@@ -17,6 +17,17 @@
   <app-sidebar *ngIf="isInstructor"></app-sidebar>
   
   <main class="main-content">
+    <!-- Profile component -->
+    <div class="profile-header">
+      <app-profile 
+        [username]="username" 
+        [role]="getDisplayRole(userRole)"
+        [avatarUrl]="avatarUrl"
+        (profileUpdate)="onProfileUpdate()"
+        (logout)="onLogout()">
+      </app-profile>
+    </div>
+
     <div class="header">
       <div>
         <h1>{{ isInstructor ? 'Thống kê khóa học của tôi' : 'Thống kê người tham gia khóa học' }}</h1>
@@ -41,12 +52,6 @@
           </span>
         </div>
       </div>
-      <app-profile 
-        [username]="username" 
-        [avatarUrl]="avatarUrl"
-        (profileUpdate)="onProfileUpdate()"
-        (logout)="onLogout()">
-      </app-profile>
     </div>
 
     <!-- API Error Notice -->

@@ -1,7 +1,7 @@
 .courses-layout {
   display: flex;
   min-height: 100vh;
-  background-color: #f5f7fa;
+  background-color: #E5ECFF; /* Đổi màu nền giống các trang khác */
 }
 
 .sidebar {
@@ -20,7 +20,12 @@
 }
 
 .profile-header {
-  margin-bottom: 20px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 1rem 0;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1); /* Gạch dưới màu đen nhạt giống course-management */
 }
 
 .header {

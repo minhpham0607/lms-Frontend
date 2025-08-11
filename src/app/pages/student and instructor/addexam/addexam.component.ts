@@ -52,6 +52,11 @@ export class AddExamComponent implements OnInit, AfterViewInit {
   public modules: ModuleItem[] = [];
   public selectedModuleId: number | null = null;
   public activeTab: 'basic' | 'questions' | 'answers' = 'basic';
+  
+  // Edit mode properties
+  public isEditMode = false;
+  public editingQuizId: number | null = null;
+  public originalQuizType: 'MULTIPLE_CHOICE' | 'ESSAY' = 'MULTIPLE_CHOICE';
 
   // Profile properties
   public username: string = '';
@@ -110,13 +115,20 @@ export class AddExamComponent implements OnInit, AfterViewInit {
     console.log('🎓 Is Student:', this.sessionService.isStudent());
     console.log('👨‍🏫 Can Manage Content:', this.canManageContent());
 
-    // Get courseId from query params
+    // Get courseId and edit parameters from query params
     if (isPlatformBrowser(this.platformId)) {
       this.route.queryParams.subscribe(params => {
         this.courseId = params['courseId'] ? +params['courseId'] : null;
         const courseName = params['courseName'];
+        
+        // Check if this is edit mode
+        this.editingQuizId = params['editQuizId'] ? +params['editQuizId'] : null;
+        this.isEditMode = !!this.editingQuizId;
+        
         console.log('📚 Course ID from query params:', this.courseId);
         console.log('📚 Course Name from query params:', courseName);
+        console.log('✏️ Edit mode:', this.isEditMode);
+        console.log('✏️ Editing quiz ID:', this.editingQuizId);
 
         if (this.courseId) {
           this.examData.courseId = this.courseId;
@@ -140,8 +152,11 @@ export class AddExamComponent implements OnInit, AfterViewInit {
           };
           console.log('✅ Using course name from params:', decodeURIComponent(courseName));
           
-          // Still need to load modules even if we have course name
+          // Load modules and quiz data if in edit mode
           this.loadModules();
+          if (this.isEditMode && this.editingQuizId) {
+            this.loadQuizDataForEdit();
+          }
         } else if (this.courseId) {
           console.log('🔄 No courseName in params, trying API fallback...');
           this.loadCourseInfo();
@@ -168,6 +183,11 @@ export class AddExamComponent implements OnInit, AfterViewInit {
         
         // Load modules for this course
         this.loadModules();
+        
+        // Load quiz data if in edit mode
+        if (this.isEditMode && this.editingQuizId) {
+          this.loadQuizDataForEdit();
+        }
       },
       error: (err: any) => {
         console.error('❌ Error loading course info:', err);
@@ -204,6 +224,53 @@ export class AddExamComponent implements OnInit, AfterViewInit {
       error: (err: any) => {
         console.error('❌ Error loading modules:', err);
         this.modules = [];
+      }
+    });
+  }
+
+  // Load quiz data for editing
+  loadQuizDataForEdit(): void {
+    if (!this.editingQuizId) return;
+
+    console.log('🔄 Loading quiz data for edit, quizId:', this.editingQuizId);
+
+    this.examService.getQuizById(this.editingQuizId).subscribe({
+      next: (quiz: any) => {
+        console.log('✅ Quiz data loaded for editing:', quiz);
+        
+        // Populate form with existing data
+        this.examData = {
+          title: quiz.title || '',
+          description: quiz.description || '',
+          courseId: quiz.courseId || this.courseId || 0,
+          moduleId: quiz.moduleId || undefined,
+          quizType: quiz.quizType || 'MULTIPLE_CHOICE',
+          timeLimit: quiz.timeLimit || 60,
+          hasTimeLimit: !!quiz.timeLimit,
+          shuffleAnswers: quiz.shuffleAnswers || false,
+          allowMultipleAttempts: quiz.allowMultipleAttempts || false,
+          maxAttempts: quiz.maxAttempts || 2,
+          showQuizResponses: quiz.showQuizResponses || false,
+          showOneQuestionAtATime: quiz.showOneQuestionAtATime || false,
+          publish: quiz.publish || false
+        };
+        
+        // Store original quiz type to prevent changing it
+        this.originalQuizType = this.examData.quizType;
+        
+        // Set selected module if exists
+        if (quiz.moduleId) {
+          this.selectedModuleId = quiz.moduleId;
+        }
+        
+        console.log('📝 Form populated with quiz data:', this.examData);
+      },
+      error: (err: any) => {
+        console.error('❌ Error loading quiz data:', err);
+        alert('Không thể tải dữ liệu bài thi để chỉnh sửa: ' + (err.error?.message || err.message || 'Lỗi không xác định'));
+        
+        // Navigate back to exams page on error
+        this.navigateBackToExams();
       }
     });
   }
@@ -259,37 +326,63 @@ export class AddExamComponent implements OnInit, AfterViewInit {
 
     const examDto = this.buildExamDto();
 
-    console.log('💾 Saving exam as draft:', examDto);
-
-    this.examService.createQuiz(examDto).subscribe({
-      next: (response: any) => {
-        console.log('✅ Exam saved successfully:', response);
-        this.isSaving = false;
-        alert('Exam đã được lưu thành công!');
-        
-        // Navigate to question creation page
-        this.navigateToCreateQuestion(response.quizId || 'new');
-      },
-      error: (err: any) => {
-        console.error('❌ Error saving exam:', err);
-        console.error('❌ Error status:', err.status);
-        console.error('❌ Error error:', err.error);
-        console.error('❌ Error message:', err.message);
-        this.isSaving = false;
-        
-        let errorMessage = 'Không thể lưu exam: ';
-        if (err.status === 403) {
-          errorMessage += 'Không có quyền truy cập (403 Forbidden). Hãy kiểm tra quyền user hoặc đăng nhập lại.';
-        } else if (err.status === 401) {
-          errorMessage += 'Chưa đăng nhập (401 Unauthorized). Hãy đăng nhập lại.';
-        } else if (err.status === 400) {
-          errorMessage += 'Dữ liệu không hợp lệ (400 Bad Request): ' + (err.error?.message || 'Kiểm tra lại thông tin nhập');
-        } else {
-          errorMessage += (err.error?.message || err.message || 'Lỗi không xác định');
+    if (this.isEditMode && this.editingQuizId) {
+      // Update existing quiz - add quizId to DTO
+      examDto.quizId = this.editingQuizId;
+      console.log('💾 Updating existing exam as draft:', examDto);
+      
+      this.examService.updateQuiz(examDto).subscribe({
+        next: (response: any) => {
+          console.log('✅ Exam updated successfully:', response);
+          this.isSaving = false;
+          alert('Bài thi đã được cập nhật thành công!');
+          
+          // Navigate to question management page
+          this.navigateToCreateQuestion(this.editingQuizId || 'new');
+        },
+        error: (err: any) => {
+          this.handleSaveError(err);
         }
-        alert(errorMessage);
-      }
-    });
+      });
+    } else {
+      // Create new quiz
+      console.log('💾 Saving exam as draft:', examDto);
+      
+      this.examService.createQuiz(examDto).subscribe({
+        next: (response: any) => {
+          console.log('✅ Exam saved successfully:', response);
+          this.isSaving = false;
+          alert('Exam đã được lưu thành công!');
+          
+          // Navigate to question creation page
+          this.navigateToCreateQuestion(response.quizId || 'new');
+        },
+        error: (err: any) => {
+          this.handleSaveError(err);
+        }
+      });
+    }
+  }
+
+  // Handle save errors
+  private handleSaveError(err: any): void {
+    console.error('❌ Error saving/updating exam:', err);
+    console.error('❌ Error status:', err.status);
+    console.error('❌ Error error:', err.error);
+    console.error('❌ Error message:', err.message);
+    this.isSaving = false;
+    
+    let errorMessage = `Không thể ${this.isEditMode ? 'cập nhật' : 'lưu'} exam: `;
+    if (err.status === 403) {
+      errorMessage += 'Không có quyền truy cập (403 Forbidden). Hãy kiểm tra quyền user hoặc đăng nhập lại.';
+    } else if (err.status === 401) {
+      errorMessage += 'Chưa đăng nhập (401 Unauthorized). Hãy đăng nhập lại.';
+    } else if (err.status === 400) {
+      errorMessage += 'Dữ liệu không hợp lệ (400 Bad Request): ' + (err.error?.message || 'Kiểm tra lại thông tin nhập');
+    } else {
+      errorMessage += (err.error?.message || err.message || 'Lỗi không xác định');
+    }
+    alert(errorMessage);
   }
 
   // Save and publish exam
@@ -301,42 +394,47 @@ export class AddExamComponent implements OnInit, AfterViewInit {
 
     const examDto = this.buildExamDto();
 
-    console.log('📢 Saving and publishing exam:', examDto);
-
-    this.examService.createQuiz(examDto).subscribe({
-      next: (response: any) => {
-        console.log('✅ Exam saved and published successfully:', response);
-        this.isSaving = false;
-        alert('Exam đã được lưu và xuất bản thành công!');
-        
-        // Navigate to question creation page
-        this.navigateToCreateQuestion(response.quizId || 'new');
-      },
-      error: (err: any) => {
-        console.error('❌ Error saving and publishing exam:', err);
-        console.error('❌ Error status:', err.status);
-        console.error('❌ Error error:', err.error);
-        console.error('❌ Error message:', err.message);
-        this.isSaving = false;
-        
-        let errorMessage = 'Không thể lưu exam: ';
-        if (err.status === 403) {
-          errorMessage += 'Không có quyền truy cập (403 Forbidden). Hãy kiểm tra quyền user hoặc đăng nhập lại.';
-        } else if (err.status === 401) {
-          errorMessage += 'Chưa đăng nhập (401 Unauthorized). Hãy đăng nhập lại.';
-        } else if (err.status === 400) {
-          errorMessage += 'Dữ liệu không hợp lệ (400 Bad Request): ' + (err.error?.message || 'Kiểm tra lại thông tin nhập');
-        } else {
-          errorMessage += (err.error?.message || err.message || 'Lỗi không xác định');
+    if (this.isEditMode && this.editingQuizId) {
+      // Update existing quiz and publish
+      examDto.quizId = this.editingQuizId;
+      console.log('📢 Updating and publishing existing exam:', examDto);
+      
+      this.examService.updateQuiz(examDto).subscribe({
+        next: (response: any) => {
+          console.log('✅ Exam updated and published successfully:', response);
+          this.isSaving = false;
+          alert('Bài thi đã được cập nhật và xuất bản thành công!');
+          
+          // Navigate to question management page
+          this.navigateToCreateQuestion(this.editingQuizId || 'new');
+        },
+        error: (err: any) => {
+          this.handleSaveError(err);
         }
-        alert(errorMessage);
-      }
-    });
+      });
+    } else {
+      // Create new quiz and publish
+      console.log('📢 Saving and publishing new exam:', examDto);
+      
+      this.examService.createQuiz(examDto).subscribe({
+        next: (response: any) => {
+          console.log('✅ Exam saved and published successfully:', response);
+          this.isSaving = false;
+          alert('Exam đã được lưu và xuất bản thành công!');
+          
+          // Navigate to question creation page
+          this.navigateToCreateQuestion(response.quizId || 'new');
+        },
+        error: (err: any) => {
+          this.handleSaveError(err);
+        }
+      });
+    }
   }
 
   // Build exam DTO for API
   private buildExamDto(): any {
-    const dto = {
+    const dto: any = {
       title: this.examData.title.trim(),
       description: this.examData.description.trim() || null,
       courseId: this.examData.courseId,
@@ -351,6 +449,11 @@ export class AddExamComponent implements OnInit, AfterViewInit {
       publish: this.examData.publish
     };
 
+    // Add quizId for update operations
+    if (this.isEditMode && this.editingQuizId) {
+      dto.quizId = this.editingQuizId;
+    }
+
     console.log('🔧 Building exam DTO:');
     console.log('📝 Title:', dto.title);
     console.log('📚 CourseId:', dto.courseId);
@@ -360,13 +463,16 @@ export class AddExamComponent implements OnInit, AfterViewInit {
     console.log('⏱️ TimeLimit:', dto.timeLimit);
     console.log('🔢 MaxAttempts:', dto.maxAttempts);
     console.log('🎯 Publish:', dto.publish);
+    console.log('✏️ Edit Mode:', this.isEditMode);
+    console.log('🆔 Quiz ID:', dto.quizId);
 
     return dto;
   }
 
-  // Cancel exam creation
+  // Cancel exam creation/editing
   cancelExam(): void {
-    if (confirm('Bạn có chắc chắn muốn hủy tạo exam? Tất cả thông tin đã nhập sẽ bị mất.')) {
+    const actionText = this.isEditMode ? 'chỉnh sửa' : 'tạo';
+    if (confirm(`Bạn có chắc chắn muốn hủy ${actionText} exam? Tất cả thông tin đã nhập sẽ bị mất.`)) {
       this.navigateBackToExams();
     }
   }

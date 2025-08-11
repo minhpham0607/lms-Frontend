@@ -1735,12 +1735,23 @@ export class DiscussionComponent implements OnInit {
 
   navigateToGrades(): void {
     if (this.courseId) {
+      // Debug role checking for grades
+      const role = this.sessionService.getUserRole();
+      console.log('🔍 Discussion->Grades Navigation Debug:', {
+        role: role,
+        isInstructor: this.isInstructor,
+        isAdmin: this.sessionService.isAdmin(),
+        courseId: this.courseId
+      });
+      
       // Check if user is instructor/admin
-      if (this.isInstructor) {
+      if (this.isInstructor || this.sessionService.isAdmin()) {
         // Navigate to instructor grades management page
+        console.log('👨‍🏫 Navigating to grades management for instructor/admin');
         this.router.navigate(['/grades'], { queryParams: { courseId: this.courseId } });
       } else {
         // Navigate to student grades view page
+        console.log('👨‍🎓 Navigating to student-grades for student');
         this.router.navigate(['/student-grades'], { queryParams: { courseId: this.courseId } });
       }
     }
@@ -1754,12 +1765,23 @@ export class DiscussionComponent implements OnInit {
 
   navigateToVideo(): void {
     if (this.courseId) {
+      // Debug role checking for video
+      const role = this.sessionService.getUserRole();
+      console.log('🔍 Discussion->Video Navigation Debug:', {
+        role: role,
+        isInstructor: this.isInstructor,
+        isAdmin: this.sessionService.isAdmin(),
+        courseId: this.courseId
+      });
+      
       // Check if user is instructor/admin
-      if (this.isInstructor) {
+      if (this.isInstructor || this.sessionService.isAdmin()) {
         // Navigate to video upload page for instructors
+        console.log('👨‍🏫 Navigating to video-upload for instructor/admin');
         this.router.navigate(['/video-upload'], { queryParams: { courseId: this.courseId } });
       } else {
         // Navigate to learn online page for students
+        console.log('👨‍🎓 Navigating to learn-online for student');
         this.router.navigate(['/learn-online'], { queryParams: { courseId: this.courseId } });
       }
     }

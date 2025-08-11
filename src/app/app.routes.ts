@@ -21,7 +21,7 @@ import { DiscussionComponent } from './pages/student and instructor/discussion/d
 import { authGuard } from './auth.guard';
 import { loginRedirectGuard } from './login-redirect.guard';
 import { adminGuard } from './admin.guard';
-import { EditQuizComponent } from './pages/admin/edit-quiz/edit-quiz.component';
+
 import { ExamResultComponent } from './pages/student and instructor/exam-result/exam-result.component';
 import { UserManagementComponent } from './pages/admin/user-management/user-management.component';
 import { GradesComponent } from './pages/admin/grades/grades.component';
@@ -44,7 +44,6 @@ export const routes: Routes = [
   { path: 'question-manager', component: QuestionManagerComponent, data: { title: 'Quản lý câu hỏi' }, canActivate: [authGuard] },
   { path: 'take-exam', component: TakeExamComponent, data: { title: 'Làm bài thi' }, canActivate: [authGuard] },
   { path: 'exam-result/:attemptId', component: ExamResultComponent, data: { title: 'Kết quả bài thi' }, canActivate: [authGuard] },
-  { path: 'edit-quiz/:id', component: EditQuizComponent, data: { title: 'Chỉnh sửa bài thi' }, canActivate: [authGuard] },
   { path: 'classroom', redirectTo: '/learn-online', pathMatch: 'full' }, // Redirect cũ
   { path: 'video-upload', component: VideoUploadComponent, data: { title: 'Tải video lên' }, canActivate: [authGuard] },
   { path: 'category', component: CategoryComponent, data: { title: 'Quản lý danh mục' }, canActivate: [authGuard] },
@@ -53,7 +52,6 @@ export const routes: Routes = [
   { path: 'course-review', component: CourseReviewComponent, data: { title: 'Đánh giá khóa học' }, canActivate: [authGuard] },
   // Admin routes
   { path: 'admin/dashboard', component: AdminDashboardComponent, data: { title: 'Admin Dashboard' }, canActivate: [authGuard, adminGuard] },
-  { path: 'admin/quiz/edit/:id', component: EditQuizComponent, data: { title: 'Chỉnh sửa bài thi' }, canActivate: [authGuard, adminGuard] },
   { path: 'admin/users', component: AdminDashboardComponent, data: { title: 'User Management' }, canActivate: [authGuard, adminGuard] }, // Temporary use AdminDashboard
   { path: 'admin/courses', component: AdminDashboardComponent, data: { title: 'Admin Course Management' }, canActivate: [authGuard, adminGuard] },
   { path: 'admin/exams', component: AdminDashboardComponent, data: { title: 'Exam Management' }, canActivate: [authGuard, adminGuard] },

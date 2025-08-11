@@ -95,8 +95,8 @@ export class UserService {
     const headers = {
       Authorization: `Bearer ${token}`
     };
-    // Thử endpoint /me hoặc /current trước, nếu không có thì dùng endpoint khác
-    return this.http.get<User>(`${this.apiUrl}/me`, { headers });
+    // Sử dụng endpoint /profile thay vì /me để khớp với backend
+    return this.http.get<User>(`${this.apiUrl}/profile`, { headers });
   }
 
   // ✅ Kiểm tra email có tồn tại không

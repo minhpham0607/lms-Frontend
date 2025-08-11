@@ -20,12 +20,13 @@
 .main-content {
   flex: 1;
   min-width: 0;
-  margin-left: 260px; /* Space for fixed sidebar */
+  margin-left: 260px;
+  /* Space for fixed sidebar */
   display: flex;
   flex-direction: column;
   min-height: 100vh;
   background: #e3e8ff;
-  
+
   @media (max-width: 768px) {
     margin-left: 60px;
     padding: 1rem;
@@ -60,67 +61,158 @@ main {
   color: #018ED5;
   font-size: 1.125rem;
   font-weight: 400;
+  margin-bottom: 1rem;
+  user-select: none;
+}
+
+.breadcrumb .fa-bars {
+  font-size: 24px;
+  color: #8bb3d8;
+  background: none;
+  border-radius: 0;
+  padding: 0;
+  transition: none;
+}
+
+.breadcrumb .fa-bars:hover {
+  color: #5a8fcf;
+  background: none;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #018ED5;
+  font-size: 1.125rem;
+  font-weight: 400;
   margin-bottom: 0.5rem;
   user-select: none;
   flex-wrap: nowrap;
+  /* Prevent wrapping */
   white-space: nowrap;
+  /* Keep content on single line */
 
-  > * {
+  /* Force all children to display inline */
+  >* {
     display: inline-block;
   }
+}
 
-  button {
-    background: none;
-    border: none;
-    padding: 4px;
-    cursor: pointer;
-    color: #8bb3d8;
-    font-size: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.breadcrumb button {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: #8bb3d8;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
-    &:hover {
-      color: #5a8fcf;
-    }
+.breadcrumb button:hover {
+  color: #5a8fcf;
+}
+
+.breadcrumb i {
+  cursor: pointer;
+}
+
+.breadcrumb-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  /* Increased spacing between breadcrumb elements */
+  margin-left: 5px;
+  font-size: 18px;
+  flex-wrap: nowrap;
+  /* Prevent wrapping to new lines */
+  white-space: nowrap;
+  /* Prevent text wrapping */
+}
+
+.breadcrumb-item {
+  white-space: nowrap;
+  /* Prevent text wrapping */
+  display: inline-block;
+  /* Ensure inline display */
+
+  &.course-name {
+    color: #3371ce;
+    font-weight: 500;
   }
 
-  i {
-    cursor: pointer;
+  &.current-page {
+    color: #666;
+    font-weight: 400;
   }
+}
 
-  .breadcrumb-nav {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-left: 5px;
-    font-size: 18px;
-    flex-wrap: nowrap;
-    white-space: nowrap;
+.breadcrumb-separator {
+  color: #999;
+  font-weight: 400;
+  white-space: nowrap;
+  /* Prevent wrapping */
+  display: inline-block;
+  /* Ensure inline display */
+  padding: 0 4px;
+  /* Add horizontal padding around the separator */
+}
 
-    .breadcrumb-item {
-      white-space: nowrap;
-      display: inline-block;
+.breadcrumb a {
+  color: #3b8ed0;
+  font-weight: 400;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 20px;
+}
 
-      &.course-name {
-        color: #3371ce;
-        font-weight: 500;
-      }
+.breadcrumb span[aria-hidden="true"] {
+  color: #999999;
+  font-size: 24px;
+  line-height: 24px;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
 
-      &.current-page {
-        color: #666;
-        font-weight: 400;
-      }
-    }
+.breadcrumb a:hover {
+  text-decoration: underline;
+}
 
-    .breadcrumb-separator {
-      color: #999;
-      font-weight: 400;
-      white-space: nowrap;
-      display: inline-block;
-      padding: 0 4px;
-    }
-  }
+.breadcrumb .current {
+  color: #018ED5;
+  font-size: 20px;
+  font-style: regular;
+  font-family: Istok Web, sans-serif;
+}
+
+.breadcrumb .item {
+  color: #000000;
+  font-size: 20px;
+  font-style: regular;
+  font-family: Istok Web, sans-serif;
+}
+
+.breadcrumb {
+  font-size: 20px;
+  gap: 0.25rem;
+  flex-direction: row !important;
+  /* Force horizontal layout */
+  flex-wrap: nowrap !important;
+  /* Prevent wrapping */
+}
+
+.breadcrumb-nav {
+  flex-direction: row !important;
+  /* Force horizontal layout */
+  flex-wrap: nowrap !important;
+  /* Prevent wrapping */
 }
 
 // Content wrapper and navigation
@@ -293,8 +385,13 @@ main {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .grades-table-container {
@@ -458,7 +555,8 @@ main {
   }
 }
 
-.graded-badge, .auto-graded-badge {
+.graded-badge,
+.auto-graded-badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -560,7 +658,9 @@ main {
     }
   }
 
-  .question-section, .answer-section, .grading-section {
+  .question-section,
+  .answer-section,
+  .grading-section {
     margin-bottom: 24px;
 
     h5 {
@@ -702,7 +802,8 @@ main {
     }
   }
 
-  .loading-essay-details, .no-answer-content {
+  .loading-essay-details,
+  .no-answer-content {
     display: flex;
     align-items: center;
     gap: 8px;

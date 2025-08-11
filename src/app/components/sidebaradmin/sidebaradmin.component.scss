@@ -183,7 +183,7 @@ nav a i {
     nav a i {
         font-size: 20px;
         margin: 0;
-        position: fixed;
+        position: static; /* Fix: changed from fixed to static */
     }
     
     nav a span {
@@ -197,6 +197,10 @@ nav a i {
         width: auto;
         height: auto;
         gap: 20px; /* Restore gap when expanded */
+    }
+    
+    aside.expanded nav a i {
+        position: static; /* Ensure icon positioning is correct when expanded */
     }
     
     aside.expanded nav a span {

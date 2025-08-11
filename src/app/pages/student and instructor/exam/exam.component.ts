@@ -454,15 +454,22 @@ export class ExamComponent {
     }
   }
 
-  // Edit exam (placeholder for future implementation)
+  // Edit exam - redirect to addexam page with quiz data for editing
   editExam(exam: ExamItem): void {
     console.log('✏️ Edit exam:', exam.title);
 
-    if (exam.quizId) {
-      // Navigate to edit quiz page - use instructor route
-      this.router.navigate(['/edit-quiz', exam.quizId]);
+    if (exam.quizId && this.courseId && this.courseInfo) {
+      // Navigate to addexam page with edit parameters
+      this.router.navigate(['/addexam'], {
+        queryParams: {
+          courseId: this.courseId,
+          courseName: encodeURIComponent(this.courseInfo.title),
+          editQuizId: exam.quizId,
+          quizTitle: encodeURIComponent(exam.title)
+        }
+      });
     } else {
-      alert('Không tìm thấy ID của bài thi để chỉnh sửa.');
+      alert('Không tìm thấy thông tin cần thiết để chỉnh sửa bài thi.');
     }
   }
 

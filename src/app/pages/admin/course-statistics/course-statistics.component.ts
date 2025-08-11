@@ -43,6 +43,7 @@ export class CourseStatisticsComponent implements OnInit {
   // Authentication & Profile
   username: string = '';
   avatarUrl: string = '';
+  userRole: string = '';
 
   // Loading & Error states
   loading = true;
@@ -106,6 +107,9 @@ export class CourseStatisticsComponent implements OnInit {
   private loadUserInfo() {
     // Get username from session
     this.username = this.sessionService.getUsername() || 'Admin';
+    
+    // Get user role from session
+    this.userRole = this.sessionService.getUserRole() || 'admin';
     
     // Try to get avatar from localStorage
     const avatarUrl = localStorage.getItem('avatarUrl');
@@ -745,5 +749,14 @@ export class CourseStatisticsComponent implements OnInit {
 
   onLogout() {
     this.sessionService.logout();
+  }
+
+  getDisplayRole(role: string): string {
+    switch (role?.toLowerCase()) {
+      case 'admin': return 'Quản trị viên';
+      case 'instructor': return 'Giảng viên';
+      case 'student': return 'Học viên';
+      default: return role || 'Admin';
+    }
   }
 }

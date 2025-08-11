@@ -2,14 +2,19 @@
   <app-sidebaradmin></app-sidebaradmin>
   
   <main class="main-content">
-    <div class="header">
-      <h1>Thống kê khóa học</h1>
+    <!-- Profile component -->
+    <div class="profile-header">
       <app-profile 
         [username]="username" 
+        [role]="getDisplayRole(userRole)"
         [avatarUrl]="avatarUrl"
         (profileUpdate)="onProfileUpdate()"
         (logout)="onLogout()">
       </app-profile>
+    </div>
+
+    <div class="header">
+      <h1>Thống kê khóa học</h1>
     </div>
 
     <div class="content" *ngIf="!loading; else loadingTemplate" id="statistics-content">

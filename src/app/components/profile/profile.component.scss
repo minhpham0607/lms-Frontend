@@ -95,7 +95,7 @@
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     min-width: 160px;
     display: none;
-    z-index: 100;
+    z-index: 1000; /* Increased z-index for mobile */
 }
 
 .profile-dropdown .dropdown-item {
@@ -104,10 +104,36 @@
     cursor: pointer;
     color: #333;
     transition: background-color 0.2s ease;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
 }
 
-.profile-dropdown .dropdown-item:hover {
+.profile-dropdown .dropdown-item:hover,
+.profile-dropdown .dropdown-item:active {
     background-color: #f2f2f2;
+}
+
+/* Mobile specific dropdown styles */
+@media (max-width: 768px) {
+    .profile-dropdown {
+        right: 0;
+        min-width: 140px;
+        margin-top: 5px;
+        border-radius: 8px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    }
+    
+    .profile-dropdown .dropdown-item {
+        padding: 12px 15px;
+        font-size: 14px;
+        -webkit-tap-highlight-color: transparent; /* Remove tap highlight on iOS */
+    }
+    
+    .profile-dropdown .dropdown-item:active {
+        background-color: #e6e6e6;
+    }
 }
 
 /* Responsive Design */

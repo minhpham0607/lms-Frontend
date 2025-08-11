@@ -402,6 +402,20 @@ export class GradesComponent implements OnInit {
     }
   }
 
+  isStudent(): boolean {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.role === 'ROLE_student';
+      } catch (error) {
+        console.warn('Error parsing token for role check:', error);
+        return false;
+      }
+    }
+    return false;
+  }
+
   onProfileUpdate(): void {
     this.initializeUserProfile();
   }

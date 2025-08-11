@@ -91,7 +91,7 @@
         <!-- Add Exam Content -->
         <div class="course-content">
           <div class="form-container">
-            <h2>Tạo Exam Mới</h2>
+            <h2>{{ isEditMode ? 'Chỉnh Sửa Bài Thi' : 'Tạo Exam Mới' }}</h2>
             
             <form autocomplete="off" novalidate>
               <div>
@@ -113,10 +113,19 @@
               </div>
               <div>
                 <label for="quiz-type">Loại đề thi *</label>
-                <select id="quiz-type" name="quizType" [(ngModel)]="examData.quizType" (change)="onQuizTypeChange()" required>
+                <select 
+                  id="quiz-type" 
+                  name="quizType" 
+                  [(ngModel)]="examData.quizType" 
+                  (change)="onQuizTypeChange()" 
+                  [disabled]="isEditMode"
+                  required>
                   <option value="MULTIPLE_CHOICE">Trắc nghiệm</option>
                   <option value="ESSAY">Tự luận</option>
                 </select>
+                <small *ngIf="isEditMode" class="help-text">
+                  Không thể thay đổi loại đề thi khi chỉnh sửa
+                </small>
               </div>
             </form>
 
@@ -169,10 +178,10 @@
               <button type="button" class="btn save-publish" 
                       (click)="saveAndPublish()" 
                       [disabled]="!isFormValid() || isSaving">
-                {{ isSaving ? 'Saving...' : 'Save & Publish' }}
+                {{ isSaving ? 'Saving...' : (isEditMode ? 'Update & Publish' : 'Save & Publish') }}
               </button>
               <button type="button" class="btn save" (click)="saveExam()" [disabled]="!isFormValid() || isSaving">
-                {{ isSaving ? 'Saving...' : 'Save' }}
+                {{ isSaving ? 'Saving...' : (isEditMode ? 'Update' : 'Save') }}
               </button>
             </div>
           </div>

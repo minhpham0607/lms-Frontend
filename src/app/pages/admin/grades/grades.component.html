@@ -7,15 +7,8 @@
   <div class="main-content">
     <!-- Profile component -->
     <div class="profile-header">
-      <app-profile
-        [username]="username"
-        [role]="userRole === 'ROLE_INSTRUCTOR' ? 'Giảng viên' :
-               userRole === 'ROLE_ADMIN' ? 'Quản trị viên' :
-               userRole === 'ROLE_STUDENT' ? 'Sinh viên' :
-               (isInstructor ? 'Giảng viên' : 'Người dùng')"
-        [avatarUrl]="avatarUrl"
-        (profileUpdate)="onProfileUpdate()"
-        (logout)="onLogout()">
+      <app-profile [username]="username" [role]="getDisplayRole(userRole)" [avatarUrl]="avatarUrl"
+        (profileUpdate)="onProfileUpdate()" (logout)="onLogout()">
       </app-profile>
     </div>
 
@@ -24,12 +17,12 @@
         <button (click)="toggleLeftMenu()" aria-label="Toggle left menu">
           <i class="fas fa-bars"></i>
         </button>
-        <nav class="breadcrumb-nav">
+        <nav class="breadcrumb-nav" *ngIf="courseInfo || courseId">
           <span class="breadcrumb-item course-name">
-            {{ courseInfo?.title || (courseId ? ('Course ' + courseId) : 'Grades Management') }}
+            {{ courseInfo?.title || ('Course ' + courseId) }}
           </span>
           <span class="breadcrumb-separator">></span>
-          <span class="breadcrumb-item current-page">Grades</span>
+          <span class="breadcrumb-item current-page">{{ currentPage }}</span>
         </nav>
       </div>
 
@@ -63,7 +56,7 @@
               <span class="menu-text">Modules</span>
             </a>
           </div>
-          <div class="link" [ngClass]="{ 'active': currentPage === 'Video' }">
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Video' }" *ngIf="!isStudent()">
             <a href="#" (click)="navigateToVideo(); $event.preventDefault()"
               [ngClass]="{ 'active-link': currentPage === 'Video' }">
               <span *ngIf="currentPage === 'Video'" class="active-indicator">|</span>
@@ -82,101 +75,89 @@
         <div class="right-content">
           <div class="grades-container">
             <div class="grades-header">
-    <h2>
-      <i class="fas fa-chart-bar"></i>
-      {{ isInstructor ? 'Quản lý điểm' : 'Điểm của bạn' }}
-    </h2>
+              <h2>
+                <i class="fas fa-chart-bar"></i>
+                {{ isInstructor ? 'Quản lý điểm' : 'Điểm của bạn' }}
+              </h2>
 
-    <div class="tabs" *ngIf="isInstructor">
-      <button
-        class="tab-btn"
-        [class.active]="activeTab === 'ALL'"
-        (click)="changeTab('ALL')">
-        Tất cả
-      </button>
-      <button
-        class="tab-btn"
-        [class.active]="activeTab === 'MULTIPLE_CHOICE'"
-        (click)="changeTab('MULTIPLE_CHOICE')">
-        Trắc nghiệm
-      </button>
-      <button
-        class="tab-btn"
-        [class.active]="activeTab === 'ESSAY'"
-        (click)="changeTab('ESSAY')">
-        Tự luận
-      </button>
-    </div>
-  </div>
-
-  <!-- Loading state -->
-  <div *ngIf="isLoading" class="loading-container">
-    <div class="spinner"></div>
-    <p>Đang tải điểm...</p>
-  </div>
-
-  <!-- Grades table -->
-  <div *ngIf="!isLoading" class="grades-table-container">
-    <div *ngIf="filteredGrades.length === 0" class="no-data">
-      <i class="fas fa-inbox"></i>
-      <p>{{ isInstructor ? 'Chưa có dữ liệu điểm nào' : 'Bạn chưa có điểm nào' }}</p>
-    </div>
-
-    <table *ngIf="filteredGrades.length > 0" class="grades-table">
-      <thead>
-        <tr>
-          <th *ngIf="isInstructor">Sinh viên</th>
-          <th>Bài kiểm tra</th>
-          <th>Loại</th>
-          <th>Điểm</th>
-          <th>Trạng thái</th>
-          <th>Thời gian nộp</th>
-          <th *ngIf="isInstructor">Thao tác</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let grade of filteredGrades" [class.pending-grade]="grade.quizType === 'ESSAY' && !grade.isGraded">
-          <td *ngIf="isInstructor">{{ grade.studentName }}</td>
-          <td>{{ grade.quizTitle }}</td>
-          <td>
-            <span class="quiz-type-badge" [class.essay]="grade.quizType === 'ESSAY'">
-              {{ grade.quizType === 'ESSAY' ? 'Tự luận' : 'Trắc nghiệm' }}
-            </span>
-          </td>
-          <td>
-            <div class="score-display">
-              <span class="score">{{ getCorrectAnswers(grade) }}</span>
-              <span class="max-score">/{{ grade.maxScore }}</span>
-              <span class="percentage">({{ getPercentage(grade).toFixed(1) }}%)</span>
+              <div class="tabs" *ngIf="isInstructor">
+                <button class="tab-btn" [class.active]="activeTab === 'ALL'" (click)="changeTab('ALL')">
+                  Tất cả
+                </button>
+                <button class="tab-btn" [class.active]="activeTab === 'MULTIPLE_CHOICE'"
+                  (click)="changeTab('MULTIPLE_CHOICE')">
+                  Trắc nghiệm
+                </button>
+                <button class="tab-btn" [class.active]="activeTab === 'ESSAY'" (click)="changeTab('ESSAY')">
+                  Tự luận
+                </button>
+              </div>
             </div>
-          </td>
-          <td>
-            <span [class]="getStatusBadgeClass(grade.status)">
-              {{ grade.status === 'COMPLETED' ? 'Hoàn thành' :
-                 grade.status === 'PENDING_GRADE' ? 'Chờ chấm điểm' : 'Chưa nộp' }}
-            </span>
-          </td>
-          <td>{{ formatDate(grade.submittedAt) }}</td>
-          <td *ngIf="isInstructor">
-            <button
-              *ngIf="grade.quizType === 'ESSAY'"
-              class="btn btn-sm"
-              [class.btn-primary]="!isEssayGraded(grade)"
-              [class.btn-warning]="isEssayGraded(grade)"
-              (click)="openGradingModal(grade)">
-              <i class="fas fa-pencil-alt"></i>
-              {{ isEssayGraded(grade) ? 'Chỉnh sửa' : 'Chấm điểm' }}
-            </button>
-            <span
-              *ngIf="grade.quizType === 'MULTIPLE_CHOICE'"
-              class="auto-graded-badge">
-              <i class="fas fa-robot"></i> Tự động
-            </span>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+
+            <!-- Loading state -->
+            <div *ngIf="isLoading" class="loading-container">
+              <div class="spinner"></div>
+              <p>Đang tải điểm...</p>
+            </div>
+
+            <!-- Grades table -->
+            <div *ngIf="!isLoading" class="grades-table-container">
+              <div *ngIf="filteredGrades.length === 0" class="no-data">
+                <i class="fas fa-inbox"></i>
+                <p>{{ isInstructor ? 'Chưa có dữ liệu điểm nào' : 'Bạn chưa có điểm nào' }}</p>
+              </div>
+
+              <table *ngIf="filteredGrades.length > 0" class="grades-table">
+                <thead>
+                  <tr>
+                    <th *ngIf="isInstructor">Sinh viên</th>
+                    <th>Bài kiểm tra</th>
+                    <th>Loại</th>
+                    <th>Điểm</th>
+                    <th>Trạng thái</th>
+                    <th>Thời gian nộp</th>
+                    <th *ngIf="isInstructor">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let grade of filteredGrades"
+                    [class.pending-grade]="grade.quizType === 'ESSAY' && !grade.isGraded">
+                    <td *ngIf="isInstructor">{{ grade.studentName }}</td>
+                    <td>{{ grade.quizTitle }}</td>
+                    <td>
+                      <span class="quiz-type-badge" [class.essay]="grade.quizType === 'ESSAY'">
+                        {{ grade.quizType === 'ESSAY' ? 'Tự luận' : 'Trắc nghiệm' }}
+                      </span>
+                    </td>
+                    <td>
+                      <div class="score-display">
+                        <span class="score">{{ getCorrectAnswers(grade) }}</span>
+                        <span class="max-score">/{{ grade.maxScore }}</span>
+                        <span class="percentage">({{ getPercentage(grade).toFixed(1) }}%)</span>
+                      </div>
+                    </td>
+                    <td>
+                      <span [class]="getStatusBadgeClass(grade.status)">
+                        {{ grade.status === 'COMPLETED' ? 'Hoàn thành' :
+                        grade.status === 'PENDING_GRADE' ? 'Chờ chấm điểm' : 'Chưa nộp' }}
+                      </span>
+                    </td>
+                    <td>{{ formatDate(grade.submittedAt) }}</td>
+                    <td *ngIf="isInstructor">
+                      <button *ngIf="grade.quizType === 'ESSAY'" class="btn btn-sm"
+                        [class.btn-primary]="!isEssayGraded(grade)" [class.btn-warning]="isEssayGraded(grade)"
+                        (click)="openGradingModal(grade)">
+                        <i class="fas fa-pencil-alt"></i>
+                        {{ isEssayGraded(grade) ? 'Chỉnh sửa' : 'Chấm điểm' }}
+                      </button>
+                      <span *ngIf="grade.quizType === 'MULTIPLE_CHOICE'" class="auto-graded-badge">
+                        <i class="fas fa-robot"></i> Tự động
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -218,7 +199,9 @@
         </div>
 
         <!-- Show message if no answer content loaded yet -->
-        <div *ngIf="!isLoadingEssayDetails && !selectedGrade.textAnswer && !selectedGrade.linkAnswer && !selectedGrade.fileName" class="no-answer-content">
+        <div
+          *ngIf="!isLoadingEssayDetails && !selectedGrade.textAnswer && !selectedGrade.linkAnswer && !selectedGrade.fileName"
+          class="no-answer-content">
           <i class="fas fa-info-circle"></i>
           <span>Đang tải nội dung câu trả lời...</span>
         </div>
@@ -244,11 +227,8 @@
           <div class="file-answer">
             <i class="fas fa-file-alt"></i>
             <span>{{ selectedGrade.fileName }}</span>
-            <a *ngIf="selectedGrade.filePath"
-               [href]="selectedGrade.filePath"
-               target="_blank"
-               download
-               class="download-btn">
+            <a *ngIf="selectedGrade.filePath" [href]="selectedGrade.filePath" target="_blank" download
+              class="download-btn">
               <i class="fas fa-download"></i> Tải xuống
             </a>
           </div>
@@ -258,22 +238,14 @@
       <div class="grading-section">
         <div class="score-input">
           <label for="gradingScore">Điểm:</label>
-          <input
-            type="number"
-            id="gradingScore"
-            [(ngModel)]="gradingScore"
-            [max]="selectedGrade.maxScore"
-            min="0"
+          <input type="number" id="gradingScore" [(ngModel)]="gradingScore" [max]="selectedGrade.maxScore" min="0"
             step="0.1">
           <span class="max-score">/ {{ selectedGrade.maxScore }}</span>
         </div>
 
         <div class="feedback-input">
           <label for="gradingFeedback">Nhận xét:</label>
-          <textarea
-            id="gradingFeedback"
-            [(ngModel)]="gradingFeedback"
-            placeholder="Nhận xét cho sinh viên..."
+          <textarea id="gradingFeedback" [(ngModel)]="gradingFeedback" placeholder="Nhận xét cho sinh viên..."
             rows="4"></textarea>
         </div>
       </div>
@@ -283,10 +255,7 @@
       <button class="btn btn-secondary" (click)="closeGradingModal()">
         Hủy
       </button>
-      <button
-        class="btn btn-primary"
-        [disabled]="isGrading"
-        (click)="submitGrade()">
+      <button class="btn btn-primary" [disabled]="isGrading" (click)="submitGrade()">
         <i *ngIf="isGrading" class="fas fa-spinner fa-spin"></i>
         {{ isGrading ? 'Đang lưu...' : (selectedGrade && isEssayGraded(selectedGrade) ? 'Cập nhật điểm' : 'Lưu điểm') }}
       </button>

@@ -1,7 +1,7 @@
 .registration-statistics-container {
   display: flex;
   min-height: 100vh;
-  background-color: #f5f7fa;
+  background-color: #E5ECFF; /* Đổi màu nền giống các trang khác */
 }
 
 .main-content {
@@ -15,9 +15,19 @@
   }
 }
 
+/* Profile header styling */
+.profile-header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 1rem 0;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1); /* Gạch dưới màu đen nhạt */
+}
+
 .header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start; /* Đổi từ space-between thành flex-start vì profile đã tách ra */
   align-items: center;
   margin-bottom: 30px;
   background: white;
@@ -33,8 +43,6 @@
   }
 
   @media (max-width: 768px) {
-    flex-direction: column;
-    gap: 15px;
     text-align: center;
 
     h1 {

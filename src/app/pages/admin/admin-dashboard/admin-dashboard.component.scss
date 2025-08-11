@@ -1,7 +1,7 @@
 .admin-dashboard-layout {
   display: flex;
   min-height: 100vh;
-  background: #f8f9fa;
+  background: #E5ECFF;
 }
 
 .sidebar {
@@ -21,7 +21,7 @@
 .admin-dashboard-content {
   margin-left: 260px; /* sidebar width */
   padding: 30px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #E5ECFF;
   min-height: 100vh;
   flex: 1;
   transition: margin-left 0.3s ease;
@@ -39,7 +39,7 @@
   align-items: center;
   padding: 1rem 0;
   margin-bottom: 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1); /* Đổi thành màu đen nhạt giống course-management */
 }
 
 .admin-header {

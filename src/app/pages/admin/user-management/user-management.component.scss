@@ -3,18 +3,18 @@
 .layout-row {
   display: flex;
   min-height: 100vh;
-  background: #f5f7fa;
+  background: #E5ECFF;
   width: 100%;
 }
 
 /* Layout for sidebar container */
 .sidebar {
   width: 260px;
-  flex-shrink: 0;
-  height: 100vh;
-  position: sticky;
+  position: fixed;              /* Đổi từ sticky thành fixed giống course-management */
   top: 0;
-  z-index: 10;
+  left: 0;
+  height: 100vh;
+  z-index: 100;                 /* Tăng z-index giống course-management */
 }
 
 /* Responsive adjustments for main content */
@@ -25,26 +25,37 @@
 }
 
 .main-content {
+  margin-left: 260px;           /* Thêm margin-left để tránh sidebar */
+  padding: 2rem;                /* Thêm padding giống course-management */
   flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
+  background: #E5ECFF;          /* Giữ nguyên màu nền đã cập nhật */
+  min-height: 100vh;            /* Thêm min-height */
+  display: flex;                /* Thêm display flex */
+  flex-direction: column;       /* Thêm flex direction */
+}
+
+/* Responsive cho main-content */
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 60px;          /* Điều chỉnh cho sidebar nhỏ */
+    padding: 1rem;              /* Giảm padding trên mobile */
+  }
 }
 
 .profile-header {
-  flex-shrink: 0;
-  background: white;
-  border-bottom: 1px solid #e5e7eb;
-  z-index: 5;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 1rem 0;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1); /* Đổi thành màu đen nhạt giống course-management */
 }
 
 .users-wrapper {
   flex: 1;
   overflow-y: auto;
   padding: 1.5rem;
-  background: #f5f7fa;
+  background: #E5ECFF;
 
   h1 {
     font-size: 2rem;

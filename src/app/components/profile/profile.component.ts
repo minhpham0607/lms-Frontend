@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, Inject, PLATFORM_ID, HostListener, ElementRef } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ProfileUpdateComponent } from '../profile-update/profile-update.component';
 import { AvatarService } from '../../services/avatar.service';
@@ -29,7 +29,8 @@ export class ProfileComponent implements OnInit {
     private userService: UserService,
     private sessionService: SessionService,
     @Inject(PLATFORM_ID) private platformId: Object,
-    private avatarService: AvatarService
+    private avatarService: AvatarService,
+    private elementRef: ElementRef
   ) {}
 
   ngOnInit() {
@@ -172,6 +173,22 @@ export class ProfileComponent implements OnInit {
   toggleProfileDropdown(event: Event) {
     event.stopPropagation();
     this.profileDropdownVisible = !this.profileDropdownVisible;
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: Event) {
+    // Check if click is outside the profile component
+    if (!this.elementRef.nativeElement.contains(event.target)) {
+      this.profileDropdownVisible = false;
+    }
+  }
+
+  @HostListener('document:touchstart', ['$event'])
+  onDocumentTouch(event: Event) {
+    // Handle touch events for mobile
+    if (!this.elementRef.nativeElement.contains(event.target)) {
+      this.profileDropdownVisible = false;
+    }
   }
 
   updateProfile() {

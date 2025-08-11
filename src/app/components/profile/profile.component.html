@@ -1,11 +1,8 @@
-<div class="header-right" aria-label="Notifications and messages">
-  <i *ngIf="showNotifications" class="far fa-bell" title="Notifications" tabindex="0"></i>
-  <i *ngIf="showMessages" class="far fa-envelope" title="Messages" tabindex="0"></i>
+<div class="header-right" aria-label="User profile">
   <div class="profile" 
        tabindex="0" 
        aria-label="User profile menu" 
-       (click)="toggleProfileDropdown($event)"
-       (clickOutside)="closeDropdown()">
+       (click)="toggleProfileDropdown($event)">
     <div class="profile-img-wrapper">
       <img [src]="getDisplayAvatar()" 
            alt="User avatar" 
