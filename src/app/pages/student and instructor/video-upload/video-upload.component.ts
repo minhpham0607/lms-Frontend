@@ -224,6 +224,30 @@ export class VideoUploadComponent implements OnInit {
     }
   }
 
+  // Check if form is valid for submission
+  isFormValid(): boolean {
+    const isValid = !!(
+      this.title?.trim() &&
+      this.description?.trim() &&
+      this.selectedFile &&
+      this.courseId &&
+      this.moduleId &&
+      this.modules.length > 0
+    );
+    
+    console.log('🔍 Form validation check:', {
+      title: this.title?.trim(),
+      description: this.description?.trim(),
+      selectedFile: !!this.selectedFile,
+      courseId: this.courseId,
+      moduleId: this.moduleId,
+      modulesCount: this.modules.length,
+      isValid: isValid
+    });
+    
+    return isValid;
+  }
+
   onSubmit(): void {
     if (!this.title || !this.description || !this.selectedFile || !this.courseId || !this.moduleId) {
       this.showAlert('Vui lòng điền đầy đủ thông tin, chọn khóa học, chọn module và chọn video.', 'warning');

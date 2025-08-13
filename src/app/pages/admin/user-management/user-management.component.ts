@@ -7,6 +7,8 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { SidebarWrapperComponent } from '../../../components/sidebar-wrapper/sidebar-wrapper.component';
 import { ProfileComponent } from '../../../components/profile/profile.component';
 import { FormsModule } from '@angular/forms';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { ImageUrlService } from '../../../services/image-url.service';
 
 @Component({
   selector: 'app-user-management',
@@ -37,7 +39,8 @@ export class UserManagementComponent implements OnInit {
   activeFilter: string = 'all'; // 'all', 'student', 'instructor'
 
   // CV viewer
-  viewingCvUrl: string | null = null;
+  viewingCvUrl: SafeResourceUrl | null = null;
+  originalCvUrl: string | null = null;
 
   // Profile component properties
   username: string = '';
@@ -48,6 +51,8 @@ export class UserManagementComponent implements OnInit {
     private userService: UserService,
     private notificationService: NotificationService,
     private sessionService: SessionService,
+    private sanitizer: DomSanitizer,
+    private imageUrlService: ImageUrlService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
@@ -325,8 +330,10 @@ export class UserManagementComponent implements OnInit {
 
   openCvViewer(cvUrl: string): void {
     this.isCvLoading = true;
-    this.viewingCvUrl = `http://localhost:8080/${cvUrl}`;
-    console.log('📄 Opening CV viewer for:', this.viewingCvUrl);
+    const fullUrl = this.imageUrlService.getImageUrl(cvUrl);
+    this.viewingCvUrl = this.sanitizer.bypassSecurityTrustResourceUrl(fullUrl);
+    this.originalCvUrl = fullUrl; // Store for opening in new tab
+    console.log('📄 Opening CV viewer for:', fullUrl);
     
     // Simulate loading state for iframe
     setTimeout(() => {
@@ -334,8 +341,15 @@ export class UserManagementComponent implements OnInit {
     }, 1000);
   }
 
+  openCvInNewTab(): void {
+    if (this.originalCvUrl) {
+      window.open(this.originalCvUrl, '_blank');
+    }
+  }
+
   closeCvViewer(): void {
     this.viewingCvUrl = null;
+    this.originalCvUrl = null;
     this.isCvLoading = false;
     console.log('❌ CV viewer closed');
   }

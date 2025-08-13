@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CourseReview, CourseReviewService, ReviewRequest, CourseCompletionDTO } from '../../../services/course-review.service';
 import { SessionService } from '../../../services/session.service';
+import { ImageUrlService } from '../../../services/image-url.service';
 import { SidebarWrapperComponent } from '../../../components/sidebar-wrapper/sidebar-wrapper.component';
 import { ProfileComponent } from '../../../components/profile/profile.component';
 import { NotificationComponent } from '../../../components/notification/notification.component';
@@ -44,14 +45,12 @@ export class CourseReviewComponent implements OnInit {
   
   // Minimum completion percentage required for review
   readonly MIN_COMPLETION_PERCENTAGE = 80;
-  
-  // Backend base URL for images
-  private readonly BACKEND_URL = 'http://localhost:8080';
 
   constructor(
     private courseReviewService: CourseReviewService,
     public sessionService: SessionService,
-    private userService: UserService
+    private userService: UserService,
+    private imageUrlService: ImageUrlService
   ) {}
 
   ngOnInit(): void {
@@ -306,18 +305,7 @@ export class CourseReviewComponent implements OnInit {
       return 'assets/pictures/default-course.png';
     }
     
-    // If URL already starts with http, return as is
-    if (imageUrl.startsWith('http')) {
-      return imageUrl;
-    }
-    
-    // If it starts with /, it's a backend relative URL
-    if (imageUrl.startsWith('/')) {
-      return `${this.BACKEND_URL}${imageUrl}`;
-    }
-    
-    // Otherwise treat as asset
-    return imageUrl;
+    return this.imageUrlService.getImageUrl(imageUrl);
   }
 
   // Helper method to get full avatar URL
@@ -326,17 +314,6 @@ export class CourseReviewComponent implements OnInit {
       return 'assets/pictures/avt.png';
     }
     
-    // If URL already starts with http, return as is
-    if (avatarUrl.startsWith('http')) {
-      return avatarUrl;
-    }
-    
-    // If it starts with /, it's a backend relative URL
-    if (avatarUrl.startsWith('/')) {
-      return `${this.BACKEND_URL}${avatarUrl}`;
-    }
-    
-    // Otherwise treat as asset
-    return avatarUrl;
+    return this.imageUrlService.getAvatarUrl(avatarUrl);
   }
 }

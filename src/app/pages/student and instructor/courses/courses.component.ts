@@ -8,6 +8,7 @@ import { NotificationComponent } from '../../../components/notification/notifica
 import { SidebarWrapperComponent } from '../../../components/sidebar-wrapper/sidebar-wrapper.component';
 import { ProfileComponent } from '../../../components/profile/profile.component';
 import { UserService } from '../../../services/user.service';
+import { ImageUrlService } from '../../../services/image-url.service';
 
 @Component({
   selector: 'app-courses',
@@ -35,6 +36,7 @@ export class CoursesComponent implements OnInit {
     private notificationService: NotificationService,
     private router: Router,
     private userService: UserService,
+    private imageUrlService: ImageUrlService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
@@ -319,6 +321,11 @@ export class CoursesComponent implements OnInit {
 
   getCourseDescription(course: any): string {
     return course.description || 'Không có mô tả';
+  }
+
+  // Get image URL using ImageUrlService
+  getImageUrl(imageUrl: string | null | undefined): string {
+    return this.imageUrlService.getImageUrl(imageUrl, 'assets/pictures/default-course.png');
   }
 
   getCoursePrice(course: any): number {

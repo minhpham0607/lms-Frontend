@@ -53,6 +53,6 @@ export class DiscussionReplyService {
 
   // Upload file for reply
   uploadFile(formData: FormData): Observable<any> {
-    return this.apiService.post('/discussions/upload', formData);
+    return this.apiService.post('/discussion-replies/upload', formData);
   }
 }

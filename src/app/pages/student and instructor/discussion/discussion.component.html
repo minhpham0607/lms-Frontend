@@ -493,9 +493,9 @@
               </div>
               <div class="attachment-item">
                 <i class="fas fa-file"></i>
-                <a [href]="selectedDiscussion.attachmentUrl"
-                   target="_blank"
-                   class="attachment-link">
+                <a (click)="downloadAttachment(selectedDiscussion.attachmentUrl, selectedDiscussion.attachmentName)"
+                   class="attachment-link"
+                   style="cursor: pointer;">
                   {{ selectedDiscussion.attachmentName }}
                 </a>
               </div>
@@ -677,9 +677,9 @@
               <div class="file-attachment" *ngIf="reply.attachmentName">
                 <div class="attachment-item">
                   <i class="fas fa-paperclip"></i>
-                  <a [href]="reply.attachmentUrl"
-                     target="_blank"
-                     class="attachment-link">
+                  <a (click)="downloadAttachment(reply.attachmentUrl, reply.attachmentName)"
+                     class="attachment-link"
+                     style="cursor: pointer;">
                     {{ reply.attachmentName }}
                   </a>
                 </div>
@@ -822,9 +822,9 @@
                   <div class="file-attachment" *ngIf="nestedReply.attachmentName">
                     <div class="attachment-item">
                       <i class="fas fa-paperclip"></i>
-                      <a [href]="nestedReply.attachmentUrl"
-                         target="_blank"
-                         class="attachment-link">
+                      <a (click)="downloadAttachment(nestedReply.attachmentUrl, nestedReply.attachmentName)"
+                         class="attachment-link"
+                         style="cursor: pointer;">
                         {{ nestedReply.attachmentName }}
                       </a>
                     </div>

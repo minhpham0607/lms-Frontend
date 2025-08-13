@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { SessionService } from '../../../services/session.service';
 import { CourseService, Course, Enrollment } from '../../../services/course.service';
 import { UserService } from '../../../services/user.service';
+import { ImageUrlService } from '../../../services/image-url.service';
 import { SidebaradminComponent } from '../../../components/sidebaradmin/sidebaradmin.component';
 import { SidebarComponent } from '../../../components/sidebar/sidebar.component';
 import { ProfileComponent } from '../../../components/profile/profile.component';
@@ -159,6 +160,7 @@ export class ParticipantStatisticsComponent implements OnInit {
     private sessionService: SessionService,
     private courseService: CourseService,
     private userService: UserService,
+    private imageUrlService: ImageUrlService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
@@ -1264,7 +1266,7 @@ export class ParticipantStatisticsComponent implements OnInit {
     if (!course.thumbnailUrl) {
       return 'assets/default-course.png'; // Fallback image
     }
-    return `http://localhost:8080/images/courses/${course.thumbnailUrl}`;
+    return this.imageUrlService.getImageUrl(course.thumbnailUrl);
   }
 
   // Handle image loading errors

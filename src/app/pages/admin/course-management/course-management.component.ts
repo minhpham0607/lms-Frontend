@@ -10,6 +10,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { SidebarWrapperComponent } from '../../../components/sidebar-wrapper/sidebar-wrapper.component';
 import { ProfileComponent } from '../../../components/profile/profile.component';
+import { ImageUrlService } from '../../../services/image-url.service';
 @Component({
   selector: 'app-course-management',
   standalone: true,
@@ -138,6 +139,7 @@ export class CourseManagementComponent implements OnInit, AfterViewInit {
     private notificationService: NotificationService,
     private http: HttpClient,
     private router: Router,
+    private imageUrlService: ImageUrlService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
@@ -276,7 +278,7 @@ viewCourse(course: Course): void {
   }
   
   this.imagePreviewUrl = course.thumbnailUrl
-    ? `http://localhost:8080/images/courses/${course.thumbnailUrl}`
+    ? this.imageUrlService.getImageUrl(course.thumbnailUrl)
     : null;
 
   // Đồng bộ dữ liệu vào selectedCourse (để binding trực tiếp trong popup)
@@ -539,6 +541,11 @@ private initializeUserProfile() {
 getDisplayRole(role: string): string {
   const cleanRole = role.replace('ROLE_', '').toLowerCase();
   return cleanRole.charAt(0).toUpperCase() + cleanRole.slice(1);
+}
+
+// Get image URL using ImageUrlService
+getImageUrl(imageUrl: string | null | undefined): string {
+  return this.imageUrlService.getImageUrl(imageUrl, 'assets/pictures/default-course.png');
 }
 
 // Profile component event handlers
