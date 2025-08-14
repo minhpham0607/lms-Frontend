@@ -61,7 +61,7 @@
              [title]="'Bấm để vào học khóa học: ' + getCourseTitle(course)">
           <div class="course-header">
             <div class="course-thumbnail" *ngIf="course.thumbnailUrl">
-              <img [src]="'http://localhost:8080/images/courses/' + course.thumbnailUrl" 
+              <img [src]="getImageUrl(course.thumbnailUrl)" 
                    [alt]="getCourseTitle(course)"
                    class="thumbnail-image">
             </div>
@@ -136,7 +136,7 @@
              [title]="getCoursePrice(course) > 0 ? 'Bấm để thanh toán và đăng ký khóa học: ' + getCourseTitle(course) : 'Bấm để đăng ký khóa học miễn phí: ' + getCourseTitle(course)">
           <div class="course-header">
             <div class="course-thumbnail" *ngIf="course.thumbnailUrl">
-              <img [src]="'http://localhost:8080/images/courses/' + course.thumbnailUrl" 
+              <img [src]="getImageUrl(course.thumbnailUrl)" 
                    [alt]="getCourseTitle(course)"
                    class="thumbnail-image">
             </div>
@@ -246,7 +246,7 @@
         <div class="course-header">
           <!-- Ảnh thumbnail khóa học -->
           <div class="course-thumbnail" *ngIf="course.thumbnailUrl">
-            <img [src]="'http://localhost:8080/images/courses/' + course.thumbnailUrl" 
+            <img [src]="getImageUrl(course.thumbnailUrl)" 
                  [alt]="getCourseTitle(course)"
                  class="thumbnail-image">
           </div>

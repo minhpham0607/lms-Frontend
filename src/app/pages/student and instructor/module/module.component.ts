@@ -9,6 +9,7 @@ import { SessionService } from '../../../services/session.service';
 import { NotificationService } from '../../../services/notification.service';
 import { ModuleContentService, VideoItem, QuizItem, ModuleProgress, ContentItem as ModuleContentItem } from '../../../services/module-content.service';
 import { ExamService } from '../../../services/exam.service';
+import { ImageUrlService } from '../../../services/image-url.service';
 import { ProfileComponent } from '../../../components/profile/profile.component';
 import { SidebarWrapperComponent } from '../../../components/sidebar-wrapper/sidebar-wrapper.component';
 import { NotificationComponent } from '../../../components/notification/notification.component';
@@ -80,6 +81,7 @@ export class ModuleComponent {
     private notificationService: NotificationService, // 👈 Thêm notification service
     private moduleContentService: ModuleContentService, // 👈 Thêm module content service
     private examService: ExamService, // 👈 Thêm exam service
+    private imageUrlService: ImageUrlService, // 👈 Thêm image URL service
     private cdr: ChangeDetectorRef, // 👈 Thêm change detector
     @Inject(PLATFORM_ID) private platformId: Object
   ) { }
@@ -877,8 +879,8 @@ export class ModuleComponent {
       if (content.contentType === 'link') {
         fullUrl = content.contentUrl;
       } else if (content.contentType === 'document') {
-        // Nếu là document, cần thêm base URL
-        fullUrl = `http://localhost:8080${content.contentUrl}`;
+        // Use ImageUrlService for consistent URL handling
+        fullUrl = this.imageUrlService.getImageUrl(content.contentUrl);
       }
 
       window.open(fullUrl, '_blank');
@@ -1967,7 +1969,7 @@ export class ModuleComponent {
         });
       } else {
         // For instructors: just open video in new tab
-        const fullUrl = `http://localhost:8080${video.fileUrl}`;
+        const fullUrl = this.imageUrlService.getVideoUrl(video.fileUrl);
         window.open(fullUrl, '_blank');
       }
     } else {
@@ -2021,7 +2023,7 @@ export class ModuleComponent {
 
     // Create video element
     const videoElement = document.createElement('video');
-    videoElement.src = `http://localhost:8080${video.fileUrl}`;
+    videoElement.src = this.imageUrlService.getVideoUrl(video.fileUrl);
     videoElement.controls = true;
     videoElement.style.cssText = `
       width: 100%;

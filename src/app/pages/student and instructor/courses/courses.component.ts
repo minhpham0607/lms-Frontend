@@ -8,10 +8,10 @@ import { NotificationComponent } from '../../../components/notification/notifica
 import { SidebarWrapperComponent } from '../../../components/sidebar-wrapper/sidebar-wrapper.component';
 import { ProfileComponent } from '../../../components/profile/profile.component';
 import { UserService } from '../../../services/user.service';
-import { PaymentModalComponent } from '../../payment-modal/payment-modal.component';
+import { ImageUrlService } from '../../../services/image-url.service';
 import { PaymentService, PaymentResponse } from '../../../services/payment.service';
 import { CourseReviewsModalComponent } from '../../../components/course-reviews-modal/course-reviews-modal.component';
-
+import { PaymentModalComponent } from '../../payment-modal/payment-modal.component';
 @Component({
   selector: 'app-courses',
   standalone: true,
@@ -46,7 +46,7 @@ export class CoursesComponent implements OnInit {
     private notificationService: NotificationService,
     private router: Router,
     private userService: UserService,
-    private paymentService: PaymentService,
+    private imageUrlService: ImageUrlService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
@@ -80,10 +80,13 @@ export class CoursesComponent implements OnInit {
         try {
           // Decode JWT token để lấy thông tin user
           const payload = JSON.parse(atob(token.split('.')[1]));
+          console.log('JWT payload:', payload);
           this.userRole = payload.role || 'student';
           this.userName = payload.sub || 'Unknown';
           this.userId = payload.id || payload.userId || 0;
+          console.log('User info loaded:', { role: this.userRole, name: this.userName, userId: this.userId });
         } catch (error) {
+          console.error('Error decoding token:', error);
           this.userRole = 'student';
         }
       } else {
@@ -106,6 +109,11 @@ export class CoursesComponent implements OnInit {
           this.enrolledCourses = courses.filter(course => course.enrolled);
           this.availableCourses = courses.filter(course => !course.enrolled);
           this.loading = false;
+          console.log('Student courses loaded:', {
+            total: courses.length,
+            enrolled: this.enrolledCourses.length,
+            available: this.availableCourses.length
+          });
         },
         error: (err) => {
           this.handleLoadError(err);
@@ -148,12 +156,14 @@ export class CoursesComponent implements OnInit {
       next: (courses) => {
         this.courses = courses;
         this.loading = false;
+        console.log('Instructor courses:', courses);
 
         if (courses.length === 0) {
-          // Instructor has no courses
+          console.log('Instructor has no courses');
         }
       },
       error: (err) => {
+        console.error('Lỗi khi tải khóa học của giảng viên:', err);
         this.courses = []; // Set empty array instead of keeping old data
         this.handleLoadError(err);
       }
@@ -166,12 +176,14 @@ export class CoursesComponent implements OnInit {
       next: (courses) => {
         this.courses = courses;
         this.loading = false;
+        console.log('Student enrolled courses:', courses);
 
         if (courses.length === 0) {
-          // Student has no enrolled courses
+          console.log('Student has no enrolled courses');
         }
       },
       error: (err) => {
+        console.error('Lỗi khi tải khóa học đã đăng ký:', err);
         this.courses = []; // Set empty array instead of keeping old data
         this.handleLoadError(err);
       }
@@ -303,7 +315,7 @@ export class CoursesComponent implements OnInit {
   // Xử lý khi thanh toán thành công
   onPaymentSuccess(response: PaymentResponse) {
     this.showAlert('Thanh toán thành công! Bạn đã được đăng ký vào khóa học.', 'success');
-    
+
     // Cập nhật trạng thái enrolled cho course
     if (this.selectedCourseForPayment) {
       const course = this.availableCourses.find(c => c.courseId === this.selectedCourseForPayment.courseId);
@@ -314,9 +326,9 @@ export class CoursesComponent implements OnInit {
         this.availableCourses = this.availableCourses.filter(c => c.courseId !== course.courseId);
       }
     }
-    
+
     this.closePaymentModal();
-    
+
     // Reload courses để đảm bảo data mới nhất
     setTimeout(() => {
       this.loadCourses();
@@ -391,6 +403,11 @@ export class CoursesComponent implements OnInit {
     return course.description || 'Không có mô tả';
   }
 
+  // Get image URL using ImageUrlService
+  getImageUrl(imageUrl: string | null | undefined): string {
+    return this.imageUrlService.getImageUrl(imageUrl, 'assets/pictures/default-course.png');
+  }
+
   getCoursePrice(course: any): number {
     return course.price || 0;
   }
@@ -404,7 +421,7 @@ export class CoursesComponent implements OnInit {
     const stars: boolean[] = [];
     const fullStars = Math.floor(rating);
     const hasHalfStar = rating % 1 >= 0.5;
-    
+
     for (let i = 0; i < 5; i++) {
       if (i < fullStars) {
         stars.push(true); // Sao đầy

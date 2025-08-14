@@ -133,7 +133,7 @@
                     accept="video/*" required />
                 </div>
                 <button type="submit" class="submit-btn"
-                  [disabled]="loading || !courseId || !moduleId || courses.length === 0 || modules.length === 0">
+                  [disabled]="loading || !isFormValid()">
                   {{ loading ? 'Đang tải lên...' : 'Tải lên' }}
                 </button>
 

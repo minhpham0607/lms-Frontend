@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { ImageUrlService } from './image-url.service';
 
 export interface User {
   userId: number;
@@ -20,7 +21,10 @@ export interface User {
 export class UserService {
   private apiUrl = 'http://localhost:8080/api/users';
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private imageUrlService: ImageUrlService
+  ) {}
 
   // ✅ Lấy thông tin user hiện tại từ token
   getCurrentUserInfo(): { username: string; avatarUrl: string; role: string } {
@@ -43,14 +47,8 @@ export class UserService {
 
         // Xử lý avatar URL từ token
         let avatarUrl = payload.avatarUrl;
-        if (avatarUrl && !avatarUrl.startsWith('http')) {
-          // Nếu avatar URL không có base URL, thêm vào
-          if (avatarUrl.startsWith('/')) {
-            avatarUrl = `http://localhost:8080${avatarUrl}`;
-          } else {
-            // Nếu chỉ là filename, thêm đường dẫn đầy đủ
-            avatarUrl = `http://localhost:8080/uploads/avatars/${avatarUrl}`;
-          }
+        if (avatarUrl) {
+          avatarUrl = this.imageUrlService.getAvatarUrl(avatarUrl);
         }
 
         return {
@@ -72,7 +70,7 @@ export class UserService {
 
   // ✅ Avatar mặc định từ Backend
   private getDefaultAvatar(): string {
-    return 'http://localhost:8080/uploads/avatars/default.png'; // ✅ Sử dụng đường dẫn uploads thay vì images
+    return this.imageUrlService.getAvatarUrl('default.png');
   }
 
   // ✅ Lấy danh sách người dùng

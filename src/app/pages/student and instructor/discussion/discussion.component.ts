@@ -11,6 +11,7 @@ import { NotificationComponent } from '../../../components/notification/notifica
 import { SidebarWrapperComponent } from '../../../components/sidebar-wrapper/sidebar-wrapper.component';
 import { ProfileComponent } from '../../../components/profile/profile.component';
 import { MarkdownPipe } from '../../../pipes/markdown.pipe';
+import { ImageUrlService } from '../../../services/image-url.service';
 
 @Component({
   selector: 'app-discussion',
@@ -114,6 +115,7 @@ export class DiscussionComponent implements OnInit {
     private courseService: CourseService,
     private sessionService: SessionService,
     private notificationService: NotificationService,
+    private imageUrlService: ImageUrlService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
@@ -144,6 +146,66 @@ export class DiscussionComponent implements OnInit {
     // Fix: Use SessionService methods that handle ROLE_ prefix properly
     this.isInstructor = this.sessionService.isInstructor();
     this.avatarUrl = '';
+  }
+
+  // Get full attachment URL using ImageUrlService
+  getAttachmentUrl(attachmentUrl: string | null | undefined): string {
+    if (!attachmentUrl) {
+      return '';
+    }
+    return this.imageUrlService.getImageUrl(attachmentUrl);
+  }
+
+  // Handle attachment download with authentication
+  downloadAttachment(attachmentUrl: string | null | undefined, attachmentName: string): void {
+    if (!attachmentUrl) {
+      console.warn('No attachment URL provided');
+      return;
+    }
+
+    // Check if it's a Cloudinary URL - open directly
+    if (attachmentUrl.startsWith('http://') || attachmentUrl.startsWith('https://')) {
+      window.open(attachmentUrl, '_blank');
+      return;
+    }
+
+    // For local files (API endpoints), need to download with authentication
+    if (attachmentUrl.startsWith('/api/')) {
+      // Get the full URL
+      const fullUrl = `http://localhost:8080${attachmentUrl}`;
+      
+      // Use fetch with credentials to download file
+      fetch(fullUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+      .then(response => {
+        if (response.ok) {
+          return response.blob();
+        }
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      })
+      .then(blob => {
+        // Create download link
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = attachmentName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      })
+      .catch(error => {
+        console.error('Download failed:', error);
+        this.notificationService.error('Lỗi tải file', 'Không thể tải file đính kèm. Vui lòng thử lại.');
+      });
+    } else {
+      // Fallback - try to open as regular URL
+      window.open(this.getAttachmentUrl(attachmentUrl), '_blank');
+    }
   }
 
   // Initialize history

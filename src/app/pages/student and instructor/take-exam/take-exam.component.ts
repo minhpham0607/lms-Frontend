@@ -18,6 +18,7 @@ import { NotificationComponent } from '../../../components/notification/notifica
 import { CourseService, Course } from '../../../services/course.service';
 import { ExamService } from '../../../services/exam.service';
 import { ApiService } from '../../../services/api.service';
+import { ImageUrlService } from '../../../services/image-url.service';
 import { ProfileComponent } from '../../../components/profile/profile.component';
 import { SidebarWrapperComponent } from '../../../components/sidebar-wrapper/sidebar-wrapper.component';
 
@@ -107,6 +108,7 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
     private courseService: CourseService,
     private examService: ExamService,
     private apiService: ApiService,
+    private imageUrlService: ImageUrlService,
     public sessionService: SessionService,
     private notificationService: NotificationService,
     @Inject(PLATFORM_ID) private platformId: Object
@@ -905,8 +907,8 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
       return fileUrl;
     }
 
-    // Otherwise, prepend the API base URL
-    return `http://localhost:8080${fileUrl}`;
+    // Otherwise, use ImageUrlService to handle URL construction
+    return this.imageUrlService.getImageUrl(fileUrl);
   }
 
   // Check if user is student

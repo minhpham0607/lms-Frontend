@@ -281,10 +281,10 @@
               <iframe [src]="viewingCvUrl" frameborder="0" (load)="isCvLoading = false"></iframe>
             </div>
             <div class="modal-actions">
-              <a [href]="viewingCvUrl" target="_blank" class="btn-external">
+              <button (click)="openCvInNewTab()" class="btn-external">
                 <i class="fas fa-external-link-alt"></i>
                 Mở trong tab mới
-              </a>
+              </button>
             </div>
           </div>
         </div>

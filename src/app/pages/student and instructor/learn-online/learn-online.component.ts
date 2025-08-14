@@ -364,6 +364,13 @@ export class LearnOnlineComponent implements OnInit, OnDestroy {
         }
 
         this.showAlert(errorMessage, 'error');
+        console.log('Video request details:', {
+          videoId: video.videoId,
+          url: `/api/videos/stream/${video.videoId}`,
+          token: localStorage.getItem('token')?.substring(0, 20) + '...',
+          status: err.status,
+          error: err.error
+        });
       }
     });
   }

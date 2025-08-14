@@ -7,6 +7,8 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { SidebarWrapperComponent } from '../../../components/sidebar-wrapper/sidebar-wrapper.component';
 import { ProfileComponent } from '../../../components/profile/profile.component';
 import { FormsModule } from '@angular/forms';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { ImageUrlService } from '../../../services/image-url.service';
 
 @Component({
   selector: 'app-user-management',
@@ -22,7 +24,7 @@ export class UserManagementComponent implements OnInit {
   searchTerm: string = '';
   editingUser: User | null = null;
   selectedAvatarFile: File | null = null;
-  
+
   // Loading states
   isLoading: boolean = false;
   isUpdating: boolean = false;
@@ -37,7 +39,8 @@ export class UserManagementComponent implements OnInit {
   activeFilter: string = 'all'; // 'all', 'student', 'instructor'
 
   // CV viewer
-  viewingCvUrl: string | null = null;
+  viewingCvUrl: SafeResourceUrl | null = null;
+  originalCvUrl: string | null = null;
 
   // Profile component properties
   username: string = '';
@@ -48,6 +51,8 @@ export class UserManagementComponent implements OnInit {
     private userService: UserService,
     private notificationService: NotificationService,
     private sessionService: SessionService,
+    private sanitizer: DomSanitizer,
+    private imageUrlService: ImageUrlService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
@@ -70,10 +75,10 @@ export class UserManagementComponent implements OnInit {
 
   loadUsers(): void {
     this.isLoading = true;
-    
+
     // Kiểm tra thông tin user hiện tại
     const userInfo = this.userService.getCurrentUserInfo();
-    
+
     // Kiểm tra token trong localStorage
     if (isPlatformBrowser(this.platformId)) {
       const token = localStorage.getItem('token');
@@ -85,7 +90,7 @@ export class UserManagementComponent implements OnInit {
         }
       }
     }
-    
+
     if (userInfo.role !== 'admin') {
       this.notificationService.error('Quyền truy cập bị từ chối', 'Bạn không có quyền truy cập tính năng này.');
       this.isLoading = false;
@@ -115,19 +120,19 @@ export class UserManagementComponent implements OnInit {
   applyFilters(): void {
     const keyword = this.searchTerm.trim().toLowerCase();
     this.filteredUsers = this.users.filter(user => {
-      const matchesSearch = !keyword || 
+      const matchesSearch = !keyword ||
         user.username.toLowerCase().includes(keyword) ||
         user.email.toLowerCase().includes(keyword) ||
         user.fullName.toLowerCase().includes(keyword);
-      
+
       const matchesRole = this.activeFilter === 'all' || user.role === this.activeFilter;
-      
+
       return matchesSearch && matchesRole;
     });
-    
+
     // Sort filtered results by userId descending (newest first)
     this.filteredUsers.sort((a, b) => b.userId - a.userId);
-    
+
     this.currentPage = 1;
     this.updatePagination();
   }
@@ -241,7 +246,7 @@ export class UserManagementComponent implements OnInit {
     formData.append('fullName', user.fullName);
     formData.append('role', user.role);
     formData.append('isVerified', String(verified));
-    
+
     if (user.cvUrl) {
       formData.append('cvUrl', user.cvUrl);
     }
@@ -253,17 +258,17 @@ export class UserManagementComponent implements OnInit {
         if (userIndex !== -1) {
           this.users[userIndex].verified = verified;
         }
-        
+
         const filteredIndex = this.filteredUsers.findIndex(u => u.userId === user.userId);
         if (filteredIndex !== -1) {
           this.filteredUsers[filteredIndex].verified = verified;
         }
-        
+
         const pagedIndex = this.pagedUsers.findIndex(u => u.userId === user.userId);
         if (pagedIndex !== -1) {
           this.pagedUsers[pagedIndex].verified = verified;
         }
-        
+
         alert(`${verified ? 'Phê duyệt' : 'Hủy phê duyệt'} thành công cho ${user.username}!`);
       },
       error: err => {
@@ -301,16 +306,26 @@ export class UserManagementComponent implements OnInit {
 
   openCvViewer(cvUrl: string): void {
     this.isCvLoading = true;
-    this.viewingCvUrl = `http://localhost:8080/${cvUrl}`;
-    
+    const fullUrl = this.imageUrlService.getImageUrl(cvUrl);
+    this.viewingCvUrl = this.sanitizer.bypassSecurityTrustResourceUrl(fullUrl);
+    this.originalCvUrl = fullUrl; // Store for opening in new tab
+    console.log('📄 Opening CV viewer for:', fullUrl);
+
     // Simulate loading state for iframe
     setTimeout(() => {
       this.isCvLoading = false;
     }, 1000);
   }
 
+  openCvInNewTab(): void {
+    if (this.originalCvUrl) {
+      window.open(this.originalCvUrl, '_blank');
+    }
+  }
+
   closeCvViewer(): void {
     this.viewingCvUrl = null;
+    this.originalCvUrl = null;
     this.isCvLoading = false;
   }
 
@@ -327,11 +342,11 @@ export class UserManagementComponent implements OnInit {
     const pages: number[] = [];
     const start = Math.max(1, this.currentPage - 2);
     const end = Math.min(this.totalPages, this.currentPage + 2);
-    
+
     for (let i = start; i <= end; i++) {
       pages.push(i);
     }
-    
+
     return pages;
   }
 

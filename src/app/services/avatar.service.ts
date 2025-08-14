@@ -26,6 +26,12 @@ export class AvatarService {
       return avatarUrl;
     }
 
+    // If it's already a full URL (including Cloudinary), return as is
+    if (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://')) {
+      console.log('✅ Using full URL (Cloudinary):', avatarUrl);
+      return avatarUrl;
+    }
+
     // Nếu URL bắt đầu bằng /uploads/avatars/, thêm base URL
     if (avatarUrl.startsWith('/uploads/avatars/')) {
       const directUrl = `${this.BASE_URL}${avatarUrl}`;

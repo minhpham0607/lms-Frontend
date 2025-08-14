@@ -152,7 +152,7 @@
           <div class="course-grid">
             <div *ngFor="let course of getPagedCourses()" class="course-card">
               <img *ngIf="course.thumbnailUrl"
-                   [src]="'http://localhost:8080/images/courses/' + course.thumbnailUrl"
+                   [src]="getImageUrl(course.thumbnailUrl)"
                    alt="Thumbnail" />
               <div class="card-content">
                     <p class="card-title">{{ course.title }}</p>

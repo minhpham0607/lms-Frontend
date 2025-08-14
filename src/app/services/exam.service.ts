@@ -181,7 +181,7 @@ export class ExamService {
 
   // Upload question file
   uploadQuestionFile(formData: FormData): Observable<any> {
-    return this.apiService.postFormData('/questions/upload-file', formData);
+    return this.apiService.postFormData('/upload/question', formData);
   }
 
   // Update quiz status (publish/unpublish)
