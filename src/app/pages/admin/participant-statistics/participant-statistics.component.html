@@ -17,17 +17,6 @@
   <app-sidebar *ngIf="isInstructor"></app-sidebar>
   
   <main class="main-content">
-    <!-- Profile component -->
-    <div class="profile-header">
-      <app-profile 
-        [username]="username" 
-        [role]="getDisplayRole(userRole)"
-        [avatarUrl]="avatarUrl"
-        (profileUpdate)="onProfileUpdate()"
-        (logout)="onLogout()">
-      </app-profile>
-    </div>
-
     <div class="header">
       <div>
         <h1>{{ isInstructor ? 'Thống kê khóa học của tôi' : 'Thống kê người tham gia khóa học' }}</h1>
@@ -52,6 +41,12 @@
           </span>
         </div>
       </div>
+      <app-profile 
+        [username]="username" 
+        [avatarUrl]="avatarUrl"
+        (profileUpdate)="onProfileUpdate()"
+        (logout)="onLogout()">
+      </app-profile>
     </div>
 
     <!-- API Error Notice -->
@@ -79,7 +74,7 @@
       </div>
     </div>
 
-    <div class="content" *ngIf="!loading; else loadingTemplate" id="participant-content">
+    <div class="content" *ngIf="!loading; else loadingTemplate" id="statistics-content">
       <!-- View Navigation -->
       <div class="view-navigation" *ngIf="isInstructor">
         <div class="nav-tabs">
@@ -319,6 +314,12 @@
         <button class="btn btn-secondary" (click)="exportStatistics()">
           <i class="fas fa-download"></i>
           Xuất JSON
+        </button>
+
+        <!-- Sửa lỗi: Đảm bảo hàm exportParticipantStatisticsToPDF được gọi đúng context và là public method -->
+       <button class="btn btn-pdf" (click)="exportToPDF()">
+          <i class="fas fa-file-pdf"></i>
+          Xuất PDF
         </button>
       </div>
 
@@ -597,7 +598,7 @@
   </main>
   
   <!-- Course Participants Modal -->
-  <div class="modal-overlay participants-modal" *ngIf="showParticipantsModal" (click)="closeCourseParticipantsModal()">>
+  <div class="modal-overlay participants-modal" *ngIf="showParticipantsModal" (click)="closeCourseParticipantsModal()">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <div class="modal-title-section">
@@ -640,7 +641,7 @@
           <div class="error-content">
             <i class="fas fa-exclamation-triangle"></i>
             <p>{{ participantsError }}</p>
-            <button class="btn btn-primary" (click)="reloadCourseParticipants()">>
+            <button class="btn btn-primary" (click)="reloadCourseParticipants()">
               <i class="fas fa-refresh"></i>
               Thử lại
             </button>
@@ -733,7 +734,7 @@
   </div>
   
   <!-- Course Statistics Modal -->
-  <div class="modal-overlay course-stats-modal" *ngIf="showCourseStatsModal" (click)="closeCourseStatsModal()">>
+  <div class="modal-overlay course-stats-modal" *ngIf="showCourseStatsModal" (click)="closeCourseStatsModal()">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>

@@ -97,11 +97,6 @@ export class AddQuestionComponent implements OnInit, AfterViewInit {
     this.username = this.sessionService.getFullName() || 'User';
     this.userRole = this.sessionService.getUserRole() || 'student';
     this.avatarUrl = '';
-
-    // Debug logging
-    console.log('🔍 AddQuestion component initialized');
-    console.log('👤 User role:', this.userRole);
-
     // Get parameters from query params
     if (isPlatformBrowser(this.platformId)) {
       this.route.queryParams.subscribe(params => {
@@ -110,11 +105,6 @@ export class AddQuestionComponent implements OnInit, AfterViewInit {
         this.quizTitle = params['quizTitle'] || 'Quiz';
         const courseName = params['courseName'];
         const questionType = params['questionType'] as 'MULTIPLE_CHOICE' | 'ESSAY';
-
-        console.log('📚 Course ID from query params:', this.courseId);
-        console.log('🧪 Quiz ID from query params:', this.quizId);
-        console.log('📝 Quiz Title from query params:', this.quizTitle);
-        console.log('❓ Question Type from query params:', questionType);
 
         if (this.quizId) {
           this.questionData.quizId = this.quizId;
@@ -145,7 +135,6 @@ export class AddQuestionComponent implements OnInit, AfterViewInit {
             price: 0,
             thumbnailUrl: ''
           };
-          console.log('✅ Using course name from params:', decodeURIComponent(courseName));
         } else if (this.courseId) {
           this.loadCourseInfo();
         }
@@ -162,15 +151,11 @@ export class AddQuestionComponent implements OnInit, AfterViewInit {
   loadCourseInfo(): void {
     if (!this.courseId) return;
 
-    console.log('🔄 Loading course info for courseId:', this.courseId);
-
     this.courseService.getCourseById(this.courseId).subscribe({
       next: (course: Course) => {
         this.courseInfo = course;
-        console.log('✅ Course info loaded successfully:', course.title);
       },
       error: (err: any) => {
-        console.error('❌ Error loading course info:', err);
         this.courseInfo = {
           courseId: this.courseId!,
           title: `Course ${this.courseId}`,
@@ -236,7 +221,6 @@ export class AddQuestionComponent implements OnInit, AfterViewInit {
       }
 
       this.selectedFile = file;
-      console.log('📎 File selected:', file.name);
     }
   }
 
@@ -276,14 +260,11 @@ export class AddQuestionComponent implements OnInit, AfterViewInit {
 
     const questionDto = this.buildQuestionDto();
 
-    console.log('💾 Saving question:', questionDto);
-
     // TODO: Create question service and API endpoint
     // this.questionService.createQuestion(questionDto).subscribe({...});
 
     // For now, simulate saving
     setTimeout(() => {
-      console.log('✅ Question saved successfully');
       this.isSaving = false;
       alert('Câu hỏi đã được lưu thành công!');
       this.navigateBackToQuiz();
@@ -298,14 +279,11 @@ export class AddQuestionComponent implements OnInit, AfterViewInit {
 
     const questionDto = this.buildQuestionDto();
 
-    console.log('💾 Saving question and continuing:', questionDto);
-
     // TODO: Create question service and API endpoint
     // this.questionService.createQuestion(questionDto).subscribe({...});
 
     // For now, simulate saving
     setTimeout(() => {
-      console.log('✅ Question saved successfully, preparing next question');
       this.isSaving = false;
       alert('Câu hỏi đã được lưu! Tiếp tục tạo câu hỏi tiếp theo.');
       this.resetForm();
@@ -334,7 +312,6 @@ export class AddQuestionComponent implements OnInit, AfterViewInit {
       this.fileInput.nativeElement.value = '';
     }
 
-    console.log(`🔄 Form reset for question ${this.currentQuestionNumber} (${this.totalQuestionsCreated} questions created so far)`);
   }
 
   // Build question DTO for API
@@ -422,7 +399,6 @@ export class AddQuestionComponent implements OnInit, AfterViewInit {
 
   // Profile methods
   onProfileUpdate(): void {
-    console.log('Profile update requested');
   }
 
   onLogout(): void {

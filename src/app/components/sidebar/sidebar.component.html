@@ -14,6 +14,12 @@
     <a (click)="navigateTo('/courses', $event)" [class.active]="isActiveRoute('/courses')" style="cursor: pointer;">
       <i class="fas fa-book"></i><span>Courses</span>
     </a>
+    <a (click)="navigateTo('/payment-history', $event)" [class.active]="isActiveRoute('/payment-history')" style="cursor: pointer;">
+      <i class="fas fa-credit-card"></i><span>Thanh toán</span>
+    </a>
+    <a (click)="navigateTo('/payment-demo', $event)" [class.active]="isActiveRoute('/payment-demo')" style="cursor: pointer;">
+      <i class="fas fa-shopping-cart"></i><span>Demo Payment</span>
+    </a>
     <a (click)="navigateTo('/course-review', $event)" [class.active]="isActiveRoute('/course-review')" style="cursor: pointer;">
       <i class="fas fa-star"></i><span>Đánh giá</span>
     </a>

@@ -96,7 +96,6 @@ export class GradesComponent implements OnInit {
   }
 
   ngOnInit() {
-    console.log('🔍 Grades component initialized');
 
     // Initialize user profile and navigation
     this.initializeUserProfile();
@@ -112,9 +111,6 @@ export class GradesComponent implements OnInit {
       if (!this.userRole && payload.role) {
         this.userRole = payload.role;
       }
-
-      console.log('👤 User role:', payload.role, 'Is Instructor:', this.isInstructor);
-      console.log('🔍 Component userRole:', this.userRole);
     }
 
     // Get course ID from route params if available, or use input
@@ -122,7 +118,6 @@ export class GradesComponent implements OnInit {
       if (!this.courseId) {
         this.courseId = params['courseId'] ? parseInt(params['courseId']) : undefined;
       }
-      console.log('📚 Course ID:', this.courseId);
 
       // Load course info if courseId is available
       if (this.courseId) {
@@ -148,24 +143,19 @@ export class GradesComponent implements OnInit {
   loadInstructorGrades() {
     if (!this.courseId) return;
 
-    console.log('📊 Loading instructor grades for course:', this.courseId);
-
     this.apiService.get(`/grades/instructor/${this.courseId}?type=${this.activeTab}`).subscribe({
       next: (response: any) => {
-        console.log('✅ Instructor grades loaded:', response);
 
         if (response.success) {
           this.grades = response.grades;
           this.filterGrades();
         } else {
-          console.error('❌ Failed to load grades:', response.message);
           alert('Lỗi khi tải danh sách điểm: ' + response.message);
         }
 
         this.isLoading = false;
       },
       error: (error) => {
-        console.error('❌ Error loading instructor grades:', error);
         alert('Lỗi khi tải danh sách điểm!');
         this.isLoading = false;
       }
@@ -173,24 +163,20 @@ export class GradesComponent implements OnInit {
   }
 
   loadStudentGrades() {
-    console.log('📊 Loading student grades');
 
     this.apiService.get('/grades/student').subscribe({
       next: (response: any) => {
-        console.log('✅ Student grades loaded:', response);
 
         if (response.success) {
           this.grades = response.grades;
           this.filterGrades();
         } else {
-          console.error('❌ Failed to load grades:', response.message);
           alert('Lỗi khi tải điểm của bạn: ' + response.message);
         }
 
         this.isLoading = false;
       },
       error: (error) => {
-        console.error('❌ Error loading student grades:', error);
         alert('Lỗi khi tải điểm của bạn!');
         this.isLoading = false;
       }
@@ -199,7 +185,6 @@ export class GradesComponent implements OnInit {
 
   changeTab(tab: string) {
     this.activeTab = tab;
-    console.log('🔄 Changing tab to:', tab);
 
     if (this.isInstructor) {
       this.loadInstructorGrades();
@@ -214,8 +199,6 @@ export class GradesComponent implements OnInit {
     } else {
       this.filteredGrades = this.grades.filter(grade => grade.quizType === this.activeTab);
     }
-
-    console.log('📋 Filtered grades:', this.filteredGrades.length, 'items');
   }
 
   openGradingModal(grade: Grade) {
@@ -225,8 +208,6 @@ export class GradesComponent implements OnInit {
     this.gradingScore = 0;
     this.gradingFeedback = '';
 
-    console.log('📝 Opening grading modal for:', grade);
-
     // Load detailed essay answer if it's an essay question
     if (grade.quizType === 'ESSAY' && grade.userAnswerId) {
       this.loadEssayDetails(grade.userAnswerId);
@@ -234,12 +215,10 @@ export class GradesComponent implements OnInit {
   }
 
   loadEssayDetails(userAnswerId: number) {
-    console.log('📄 Loading essay details for userAnswerId:', userAnswerId);
     this.isLoadingEssayDetails = true;
 
     this.apiService.get(`/grades/essay-details/${userAnswerId}`).subscribe({
       next: (response: any) => {
-        console.log('✅ Essay details loaded:', response);
 
         if (response.success && this.selectedGrade) {
           const essayDetails = response.essayDetails;
@@ -257,20 +236,15 @@ export class GradesComponent implements OnInit {
           // Load existing score and feedback if already graded
           if (essayDetails.manualScore !== null && essayDetails.manualScore !== undefined) {
             this.gradingScore = essayDetails.manualScore;
-            console.log('📊 Loaded existing score:', this.gradingScore);
           }
 
           if (essayDetails.instructorFeedback) {
             this.gradingFeedback = essayDetails.instructorFeedback;
-            console.log('💬 Loaded existing feedback:', this.gradingFeedback);
           }
-
-          console.log('📋 Updated grade with essay details:', this.selectedGrade);
         }
         this.isLoadingEssayDetails = false;
       },
       error: (error) => {
-        console.error('❌ Error loading essay details:', error);
         this.isLoadingEssayDetails = false;
         // Don't show alert, just log the error since modal still works without details
       }
@@ -290,11 +264,6 @@ export class GradesComponent implements OnInit {
     }
 
     this.isGrading = true;
-    console.log('💾 Submitting grade:', {
-      userAnswerId: this.selectedGrade.userAnswerId,
-      score: this.gradingScore,
-      feedback: this.gradingFeedback
-    });
 
     const gradeData = {
       userAnswerId: this.selectedGrade.userAnswerId,
@@ -304,7 +273,6 @@ export class GradesComponent implements OnInit {
 
     this.apiService.post('/grades/grade-essay', gradeData).subscribe({
       next: (response: any) => {
-        console.log('✅ Grade submitted:', response);
 
         if (response.success) {
           alert('Chấm điểm thành công!');
@@ -316,8 +284,6 @@ export class GradesComponent implements OnInit {
             if (gradeIndex !== -1) {
               this.grades[gradeIndex].status = 'COMPLETED';
               this.grades[gradeIndex].feedback = this.gradingFeedback;
-
-              console.log('✅ Updated local grade status');
             }
 
             // Update filtered grades as well
@@ -327,7 +293,6 @@ export class GradesComponent implements OnInit {
           this.closeGradingModal();
 
           // Reload grades to get updated score from backend
-          console.log('🔄 Reloading grades after grading...');
           this.loadGrades();
         } else {
           alert('Lỗi: ' + response.message);
@@ -336,7 +301,6 @@ export class GradesComponent implements OnInit {
         this.isGrading = false;
       },
       error: (error) => {
-        console.error('❌ Error submitting grade:', error);
         let errorMessage = 'Lỗi khi chấm điểm!';
         if (error.error && error.error.message) {
           errorMessage = error.error.message;
@@ -374,30 +338,22 @@ export class GradesComponent implements OnInit {
             const payload = JSON.parse(atob(token.split('.')[1]));
             this.userRole = payload.role || '';
           } catch (error) {
-            console.warn('Error parsing token for role:', error);
           }
         }
       }
 
-      console.log('🔍 Grades component - User role:', this.userRole);
       const userInfo = this.userService.getCurrentUserInfo();
       this.username = userInfo.username || '';
       this.avatarUrl = userInfo.avatarUrl || '';
-      console.log('👤 Grades component - User info:', { username: this.username, role: this.userRole });
-
-      // Test getDisplayRole method immediately
-      console.log('🧪 Testing getDisplayRole:', this.getDisplayRole(this.userRole));
     }
   }
 
   getDisplayRole(role: string): string {
-    console.log('🏷️ getDisplayRole called with:', role);
     switch (role) {
       case 'ROLE_ADMIN': return 'Quản trị viên';
       case 'ROLE_INSTRUCTOR': return 'Giảng viên';
       case 'ROLE_STUDENT': return 'Sinh viên';
       default:
-        console.log('⚠️ Unknown role:', role);
         return 'Người dùng';
     }
   }
@@ -409,7 +365,6 @@ export class GradesComponent implements OnInit {
         const payload = JSON.parse(atob(token.split('.')[1]));
         return payload.role === 'ROLE_student';
       } catch (error) {
-        console.warn('Error parsing token for role check:', error);
         return false;
       }
     }
@@ -472,10 +427,8 @@ export class GradesComponent implements OnInit {
     this.courseService.getCourseById(this.courseId).subscribe({
       next: (course) => {
         this.courseInfo = course;
-        console.log('✅ Course info loaded:', course);
       },
       error: (error) => {
-        console.error('❌ Error loading course info:', error);
       }
     });
   }

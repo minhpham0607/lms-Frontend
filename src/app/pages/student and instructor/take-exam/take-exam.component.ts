@@ -131,9 +131,6 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
     this.userRole = this.sessionService.getUserRole() || 'student';
     this.avatarUrl = '';
 
-    // Debug logging
-    console.log('🎓 TakeExam component initialized');
-
     // Get parameters from query params
     if (isPlatformBrowser(this.platformId)) {
       this.route.queryParams.subscribe(params => {
@@ -141,10 +138,6 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
         this.quizId = params['quizId'] ? +params['quizId'] : null;
         const courseName = params['courseName'];
         this.returnTo = params['returnTo'] || 'exam'; // Capture returnTo parameter
-
-        console.log('📚 Course ID:', this.courseId);
-        console.log('🧪 Quiz ID:', this.quizId);
-        console.log('🔄 Return to:', this.returnTo);
 
         // Set course info from params
         if (courseName && courseName.trim()) {
@@ -180,12 +173,8 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
   checkSubmissionStatus(): void {
     if (!this.quizId) return;
 
-    console.log('🔍 Checking submission status for quiz:', this.quizId);
-
     this.examService.checkExamSubmission(this.quizId).subscribe({
       next: (response: any) => {
-        console.log('✅ Submission status checked:', response);
-
         if (response.success !== false) {
           // Normal response - either submitted or not submitted
           this.hasSubmitted = response.hasSubmitted || false;
@@ -193,7 +182,6 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
           // Update attempt information
           if (response.attemptCount !== undefined) {
             this.attemptNumber = (response.attemptCount || 0) + 1;
-            console.log('📊 Current attempt number:', this.attemptNumber);
           }
 
           if (this.hasSubmitted) {
@@ -201,22 +189,17 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
             this.examResult = response.result;
             this.isExamCompleted = true;
             this.isLoading = false; // Stop loading immediately
-            console.log('📋 User has already submitted. Showing result view.');
           } else {
             // User hasn't submitted, load exam for taking
-            console.log('📝 User hasn\'t submitted. Loading exam for taking.');
             this.loadExamData();
           }
         } else {
           // Error response - default to allowing exam
-          console.log('⚠️ Error response but allowing exam:', response.message);
           this.loadExamData();
         }
       },
       error: (error: any) => {
-        console.error('❌ Error checking submission status:', error);
         // Fallback: allow taking exam
-        console.log('🔄 Fallback: Loading exam for taking');
         this.loadExamData();
       }
     });
@@ -231,7 +214,6 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
         this.courseInfo = course;
       },
       error: (err: any) => {
-        console.error('❌ Error loading course info:', err);
         this.courseInfo = {
           courseId: this.courseId!,
           title: `Course ${this.courseId}`,
@@ -250,11 +232,8 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
   loadExamData(): void {
     if (!this.quizId) return;
 
-    console.log('📝 Loading exam data for quiz:', this.quizId);
-
     this.examService.getQuizWithQuestions(this.quizId).subscribe({
       next: (response: any) => {
-        console.log('✅ Exam data loaded:', response);
 
         const quiz = response.quiz;
         const questions = response.questions;
@@ -321,7 +300,6 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
         this.isLoading = false; // Stop loading when exam data is ready
       },
       error: (error) => {
-        console.error('❌ Error loading exam data:', error);
         // Fallback to mock data if API fails
         this.loadMockExamData();
       }
@@ -371,8 +349,6 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
       this.timeRemaining = this.examData.timeLimit * 60; // Convert to seconds
       this.startTimer();
     }
-
-    console.log('🚀 Exam started:', this.examData.title);
   }
 
   // Start timer
@@ -494,8 +470,6 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
     const earned = this.examResult.questionResults
       .reduce((total: number, q: any) => total + (q.earnedPoints || 0), 0);
 
-    console.log('🔍 getEarnedPoints:', earned);
-    console.log('🔍 questionResults:', this.examResult.questionResults);
     return earned;
   }
 
@@ -507,7 +481,6 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
     const total = this.examResult.questionResults
       .reduce((total: number, q: any) => total + (q.points || 1), 0);
 
-    console.log('🔍 getTotalPoints:', total);
     return total;
   }
 
@@ -572,15 +545,11 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
         (this.examData.timeLimit * 60 - this.timeRemaining) : 0
     };
 
-    console.log('📝 Submitting exam answers:', submissionData);
-
     // Handle file uploads first if there are any
     this.uploadEssayFiles(submissionData).then((updatedSubmissionData) => {
       // Submit exam with potentially updated file paths
       this.examService.submitExam(updatedSubmissionData).subscribe({
         next: (response: any) => {
-          console.log('✅ Exam submitted successfully:', response);
-
           this.isExamCompleted = true;
           this.hasSubmitted = true;
           this.examResult = response.result;
@@ -588,14 +557,13 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
           // Update attempt count if provided
           if (response.attemptCount !== undefined) {
             this.attemptNumber = response.attemptCount;
-            console.log('📊 Updated attempt count:', this.attemptNumber);
           }
 
           this.showAlert('Bài thi đã được nộp thành công!', 'success');
 
           // Show result if it's multiple choice
           if (this.examData?.quizType === 'MULTIPLE_CHOICE' && this.examResult) {
-            console.log('📊 Displaying exam result:', this.examResult);
+            // Exam result available for display
           }
 
           // Auto-navigate back to source page after a short delay
@@ -604,7 +572,6 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
           }, 2000); // 2 second delay to show success message
         },
         error: (error: any) => {
-          console.error('❌ Error submitting exam:', error);
 
           let errorMessage = 'Lỗi khi nộp bài thi!';
           if (error.error && error.error.message) {
@@ -618,7 +585,6 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       });
     }).catch((error) => {
-      console.error('❌ Error uploading files:', error);
       this.showAlert('Lỗi khi upload file: ' + error.message, 'error');
       this.isSubmitting = false;
     });
@@ -626,8 +592,6 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Upload essay files for questions that have file submissions
   private async uploadEssayFiles(submissionData: any): Promise<any> {
-    console.log('📤 Starting file uploads for essay questions...');
-
     if (!this.examData) {
       return submissionData;
     }
@@ -642,8 +606,6 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
           question.essaySubmissionType === 'file' &&
           question.selectedFile) {
 
-        console.log(`📁 Uploading file for question ${question.questionId}:`, question.selectedFile.name);
-
         const uploadPromise = this.uploadSingleFile(question.selectedFile, question.questionId || 0, i, submissionData);
         fileUploadPromises.push(uploadPromise);
       }
@@ -652,9 +614,6 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
     // Wait for all uploads to complete
     if (fileUploadPromises.length > 0) {
       await Promise.all(fileUploadPromises);
-      console.log('✅ All file uploads completed successfully');
-    } else {
-      console.log('ℹ️ No files to upload');
     }
 
     return submissionData;
@@ -670,8 +629,6 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
 
       this.apiService.uploadEssayFile(formData).subscribe({
         next: (response: any) => {
-          console.log('✅ File uploaded successfully:', response);
-
           if (response.success) {
             // Update submission data with file information
             if (submissionData.answers[answerIndex]) {
@@ -684,7 +641,6 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
           }
         },
         error: (error: any) => {
-          console.error('❌ File upload failed:', error);
           reject(new Error(error.error?.message || 'File upload failed'));
         }
       });
@@ -792,7 +748,7 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   // Profile methods
-  onProfileUpdate(): void { console.log('Profile update requested'); }
+  onProfileUpdate(): void { /* Profile update requested */ }
 
   onLogout(): void {
     this.sessionService.logout();
@@ -850,8 +806,6 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
       if (!currentQuestion.essaySubmissionType) {
         currentQuestion.essaySubmissionType = 'text';
       }
-
-      console.log('📝 Essay submission type changed to:', type);
     }
   }
 
@@ -882,7 +836,6 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
       }
 
       currentQuestion.selectedFile = file;
-      console.log('📎 File selected:', file.name, this.formatFileSize(file.size));
     }
   }
 
@@ -891,7 +844,6 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
     const currentQuestion = this.getCurrentQuestion();
     if (currentQuestion) {
       currentQuestion.selectedFile = undefined;
-      console.log('🗑️ File removed');
     }
   }
 

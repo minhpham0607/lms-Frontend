@@ -8,11 +8,14 @@ import { NotificationComponent } from '../../../components/notification/notifica
 import { SidebarWrapperComponent } from '../../../components/sidebar-wrapper/sidebar-wrapper.component';
 import { ProfileComponent } from '../../../components/profile/profile.component';
 import { UserService } from '../../../services/user.service';
+import { PaymentModalComponent } from '../../payment-modal/payment-modal.component';
+import { PaymentService, PaymentResponse } from '../../../services/payment.service';
+import { CourseReviewsModalComponent } from '../../../components/course-reviews-modal/course-reviews-modal.component';
 
 @Component({
   selector: 'app-courses',
   standalone: true,
-  imports: [CommonModule, SidebarWrapperComponent, ProfileComponent, NotificationComponent],
+  imports: [CommonModule, SidebarWrapperComponent, ProfileComponent, NotificationComponent, PaymentModalComponent, CourseReviewsModalComponent],
   templateUrl: './courses.component.html',
   styleUrls: ['./courses.component.scss']
 })
@@ -29,12 +32,21 @@ export class CoursesComponent implements OnInit {
   username: string = '';
   avatarUrl: string = '';
 
+  // Payment modal properties
+  isPaymentModalVisible = false;
+  selectedCourseForPayment: any = null;
+
+  // Reviews modal properties
+  isReviewsModalVisible = false;
+  selectedCourseForReviews: any = null;
+
   constructor(
     private apiService: ApiService,
     public sessionService: SessionService,
     private notificationService: NotificationService,
     private router: Router,
     private userService: UserService,
+    private paymentService: PaymentService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
@@ -68,13 +80,10 @@ export class CoursesComponent implements OnInit {
         try {
           // Decode JWT token để lấy thông tin user
           const payload = JSON.parse(atob(token.split('.')[1]));
-          console.log('JWT payload:', payload);
           this.userRole = payload.role || 'student';
           this.userName = payload.sub || 'Unknown';
           this.userId = payload.id || payload.userId || 0;
-          console.log('User info loaded:', { role: this.userRole, name: this.userName, userId: this.userId });
         } catch (error) {
-          console.error('Error decoding token:', error);
           this.userRole = 'student';
         }
       } else {
@@ -97,11 +106,6 @@ export class CoursesComponent implements OnInit {
           this.enrolledCourses = courses.filter(course => course.enrolled);
           this.availableCourses = courses.filter(course => !course.enrolled);
           this.loading = false;
-          console.log('Student courses loaded:', {
-            total: courses.length,
-            enrolled: this.enrolledCourses.length,
-            available: this.availableCourses.length
-          });
         },
         error: (err) => {
           this.handleLoadError(err);
@@ -144,14 +148,12 @@ export class CoursesComponent implements OnInit {
       next: (courses) => {
         this.courses = courses;
         this.loading = false;
-        console.log('Instructor courses:', courses);
 
         if (courses.length === 0) {
-          console.log('Instructor has no courses');
+          // Instructor has no courses
         }
       },
       error: (err) => {
-        console.error('Lỗi khi tải khóa học của giảng viên:', err);
         this.courses = []; // Set empty array instead of keeping old data
         this.handleLoadError(err);
       }
@@ -164,14 +166,12 @@ export class CoursesComponent implements OnInit {
       next: (courses) => {
         this.courses = courses;
         this.loading = false;
-        console.log('Student enrolled courses:', courses);
 
         if (courses.length === 0) {
-          console.log('Student has no enrolled courses');
+          // Student has no enrolled courses
         }
       },
       error: (err) => {
-        console.error('Lỗi khi tải khóa học đã đăng ký:', err);
         this.courses = []; // Set empty array instead of keeping old data
         this.handleLoadError(err);
       }
@@ -204,57 +204,13 @@ export class CoursesComponent implements OnInit {
           }
         });
       } else {
-        if (confirm('Bạn chưa đăng ký khóa học này. Đăng ký ngay?')) {
-          this.loading = true; // Hiển thị loading khi đăng ký
-          this.apiService.post('/enrollments/register', { courseId: course.courseId })
-            .subscribe({
-              next: (response: any) => {
-                this.loading = false;
-                console.log('Enrollment response:', response);
-
-                if (response && response.success) {
-                  this.showAlert(response.message || 'Đăng ký thành công!', 'success');
-                  course.enrolled = true;
-                  this.router.navigate(['/course-home'], {
-                    queryParams: {
-                      courseId: course.courseId,
-                      courseName: course.title
-                    }
-                  });
-                } else {
-                  this.showAlert(response?.message || 'Có lỗi xảy ra!');
-                }
-              },
-              error: (error) => {
-                this.loading = false;
-                console.error('Enrollment error:', error);
-
-                if (error.status === 400 && error.error && error.error.message) {
-                  this.showAlert(error.error.message);
-                  if (error.error.message.includes('đã đăng ký')) {
-                    course.enrolled = true; // Cập nhật trạng thái
-                  }
-                } else if (error.status === 401) {
-                  this.showAlert('Bạn cần đăng nhập để đăng ký khóa học!');
-                  this.router.navigate(['/login']);
-                } else if (error.status === 403) {
-                  this.showAlert('Bạn không có quyền đăng ký khóa học này!');
-                } else {
-                  // Xử lý trường hợp response text thay vì JSON
-                  let errorMessage = 'Đăng ký thất bại: ';
-                  if (error.error && typeof error.error === 'string') {
-                    errorMessage += error.error;
-                  } else if (error.error && error.error.message) {
-                    errorMessage += error.error.message;
-                  } else if (error.message) {
-                    errorMessage += error.message;
-                  } else {
-                    errorMessage += 'Lỗi không xác định';
-                  }
-                  this.showAlert(errorMessage);
-                }
-              }
-            });
+        // Kiểm tra khóa học có phí hay miễn phí
+        if (course.price && course.price > 0) {
+          // Khóa học có phí -> hiển thị payment modal
+          this.showPaymentModal(course);
+        } else {
+          // Khóa học miễn phí -> đăng ký trực tiếp
+          this.registerFreeCourse(course);
         }
       }
     } else {
@@ -268,10 +224,107 @@ export class CoursesComponent implements OnInit {
     }
   }
 
+  // Hiển thị payment modal cho khóa học có phí
+  showPaymentModal(course: any) {
+    this.selectedCourseForPayment = {
+      courseId: course.courseId,
+      title: course.title || course.courseTitle,
+      description: course.description,
+      price: course.price,
+      imageUrl: course.thumbnailUrl,
+      instructorName: course.instructorName || 'Chưa có thông tin'
+    };
+    this.isPaymentModalVisible = true;
+  }
+
+  // Đăng ký khóa học miễn phí
+  registerFreeCourse(course: any) {
+    if (confirm('Bạn chưa đăng ký khóa học này. Đăng ký ngay?')) {
+      this.loading = true;
+      this.apiService.post('/enrollments/register', { courseId: course.courseId })
+        .subscribe({
+          next: (response: any) => {
+            this.loading = false;
+
+            if (response && response.success) {
+              this.showAlert(response.message || 'Đăng ký thành công!', 'success');
+              course.enrolled = true;
+              this.router.navigate(['/course-home'], {
+                queryParams: {
+                  courseId: course.courseId,
+                  courseName: course.title
+                }
+              });
+            } else {
+              this.showAlert(response?.message || 'Có lỗi xảy ra!');
+            }
+          },
+          error: (error) => {
+            this.loading = false;
+            this.handleEnrollmentError(error, course);
+          }
+        });
+    }
+  }
+
+  // Xử lý lỗi đăng ký
+  handleEnrollmentError(error: any, course: any) {
+    if (error.status === 400 && error.error && error.error.message) {
+      this.showAlert(error.error.message);
+      if (error.error.message.includes('đã đăng ký')) {
+        course.enrolled = true;
+      }
+    } else if (error.status === 401) {
+      this.showAlert('Bạn cần đăng nhập để đăng ký khóa học!');
+      this.router.navigate(['/login']);
+    } else if (error.status === 403) {
+      this.showAlert('Bạn không có quyền đăng ký khóa học này!');
+    } else {
+      let errorMessage = 'Đăng ký thất bại: ';
+      if (error.error && typeof error.error === 'string') {
+        errorMessage += error.error;
+      } else if (error.error && error.error.message) {
+        errorMessage += error.error.message;
+      } else if (error.message) {
+        errorMessage += error.message;
+      } else {
+        errorMessage += 'Lỗi không xác định';
+      }
+      this.showAlert(errorMessage);
+    }
+  }
+
+  // Đóng payment modal
+  closePaymentModal() {
+    this.isPaymentModalVisible = false;
+    this.selectedCourseForPayment = null;
+  }
+
+  // Xử lý khi thanh toán thành công
+  onPaymentSuccess(response: PaymentResponse) {
+    this.showAlert('Thanh toán thành công! Bạn đã được đăng ký vào khóa học.', 'success');
+    
+    // Cập nhật trạng thái enrolled cho course
+    if (this.selectedCourseForPayment) {
+      const course = this.availableCourses.find(c => c.courseId === this.selectedCourseForPayment.courseId);
+      if (course) {
+        course.enrolled = true;
+        // Di chuyển từ available sang enrolled
+        this.enrolledCourses.push(course);
+        this.availableCourses = this.availableCourses.filter(c => c.courseId !== course.courseId);
+      }
+    }
+    
+    this.closePaymentModal();
+    
+    // Reload courses để đảm bảo data mới nhất
+    setTimeout(() => {
+      this.loadCourses();
+    }, 1000);
+  }
+
   // Xem chi tiết khóa học -> chuyển sang trang course-home
   viewCourseDetails(course: any) {
-    console.log('View course details:', course);
-
     if (this.sessionService.isInstructor()) {
       // Giảng viên: Chuyển sang trang course-home
       this.router.navigate(['/course-home'], {
@@ -297,6 +350,23 @@ export class CoursesComponent implements OnInit {
         }
       });
     }
+  }
+
+  // Xem đánh giá khóa học
+  viewCourseReviews(course: any) {
+    // Hiển thị modal đánh giá thay vì navigate
+    this.selectedCourseForReviews = {
+      courseId: course.courseId,
+      courseName: this.getCourseTitle(course),
+      canWriteReview: course.enrolled || false // Chỉ cho phép viết đánh giá nếu đã đăng ký
+    };
+    this.isReviewsModalVisible = true;
+  }
+
+  // Đóng reviews modal
+  closeReviewsModal() {
+    this.isReviewsModalVisible = false;
+    this.selectedCourseForReviews = null;
   }
 
   // Format giá tiền
@@ -329,6 +399,24 @@ export class CoursesComponent implements OnInit {
     return course.createdAt || course.enrolledAt || new Date().toISOString();
   }
 
+  // Tạo array sao để hiển thị rating
+  getStarArray(rating: number): boolean[] {
+    const stars: boolean[] = [];
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    
+    for (let i = 0; i < 5; i++) {
+      if (i < fullStars) {
+        stars.push(true); // Sao đầy
+      } else if (i === fullStars && hasHalfStar) {
+        stars.push(true); // Sao nửa (hiển thị như sao đầy cho đơn giản)
+      } else {
+        stars.push(false); // Sao rỗng
+      }
+    }
+    return stars;
+  }
+
   // Initialize user profile data from session
   private initializeUserProfile() {
     const userInfo = this.userService.getCurrentUserInfo();
@@ -350,7 +438,7 @@ export class CoursesComponent implements OnInit {
 
   // Profile component event handlers
   onProfileUpdate() {
-    console.log('Profile update requested');
+    // Profile update requested
   }
 
   onLogout() {

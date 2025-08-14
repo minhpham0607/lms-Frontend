@@ -52,14 +52,8 @@ export class LearnOnlineComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    console.log('🎥 Learn-online component initialized');
-    console.log('👤 User role:', this.sessionService.getUserRole());
-    console.log('🎓 Is Student:', this.sessionService.isStudent());
-    console.log('👨‍🏫 Is Instructor:', this.sessionService.isInstructor());
-
     // Chỉ load data khi đang chạy ở browser (có localStorage)
     if (!isPlatformBrowser(this.platformId)) {
-      console.log('SSR mode - skipping data loading');
       return;
     }
 
@@ -70,18 +64,14 @@ export class LearnOnlineComponent implements OnInit, OnDestroy {
     this.route.queryParams.subscribe(params => {
       if (params['courseId']) {
         this.courseId = parseInt(params['courseId']);
-        console.log('CourseId from URL params:', this.courseId);
 
         // Check if navigated from module page
         this.fromModule = !!params['videoId']; // If videoId exists, came from module
-        console.log('From module page:', this.fromModule);
 
         // If videoId is provided, load specific video directly
         if (params['videoId']) {
           const videoId = parseInt(params['videoId']);
           const moduleId = params['moduleId'] ? parseInt(params['moduleId']) : null;
-          console.log('VideoId from URL params:', videoId);
-          console.log('ModuleId from URL params:', moduleId);
 
           // Load and play specific video
           this.loadSpecificVideo(videoId, moduleId);
@@ -143,7 +133,6 @@ export class LearnOnlineComponent implements OnInit, OnDestroy {
   private showNoVideosMessage() {
     this.hasNoVideos = true;
     this.currentVideo = null;
-    console.log('Course has no videos available');
   }
 
   // Get current course name for display
@@ -160,7 +149,6 @@ export class LearnOnlineComponent implements OnInit, OnDestroy {
         this.currentCourseName = course.title || 'Khóa học';
       },
       error: (err) => {
-        console.error('Error loading course info:', err);
         this.currentCourseName = 'Khóa học';
       }
     });
@@ -172,12 +160,10 @@ export class LearnOnlineComponent implements OnInit, OnDestroy {
 
     // For student, directly load course content if courseId is available
     if (this.courseId) {
-      console.log('Loading course content directly for courseId:', this.courseId);
       this.loadVideos(); // Auto load videos
       this.loadCourseInfo(); // Load course info to get course name
       this.loading = false;
     } else {
-      console.warn('No courseId provided');
       this.loading = false;
     }
   }
@@ -200,25 +186,17 @@ export class LearnOnlineComponent implements OnInit, OnDestroy {
 
     this.apiService.getVideosByCourse(this.courseId, publishedOnly).subscribe({
       next: data => {
-        console.log(`🔍 Raw videos received for course ${this.courseId}:`, JSON.stringify(data, null, 2));
-
         // Always apply client-side filtering for students as additional safety measure
         if (publishedOnly) {
-          console.log('🔒 Applying additional client-side filtering for students');
           this.videos = data.filter(video => {
             const isPublished = video.published === true || video.publish === true || video.status === 'published';
-            console.log(`Video "${video.title}": published=${video.published}, publish=${video.publish}, status=${video.status}, isPublished=${isPublished}`);
             return isPublished;
           });
-          console.log('🔒 Final filtered videos for student:', this.videos);
         } else {
-          console.log('👨‍🏫 Loading all videos for instructor/admin');
           this.videos = data;
         }
 
         this.loading = false;
-
-        console.log(`✅ Videos loaded for course ${this.courseId}:`, this.videos);
 
         if (this.videos.length > 0) {
           // Phát video đầu tiên của khóa học
@@ -231,24 +209,17 @@ export class LearnOnlineComponent implements OnInit, OnDestroy {
         }
       },
       error: err => {
-        console.error('Lỗi khi tải danh sách video:', err);
         this.loading = false;
 
         // If publishedOnly request fails, try fallback for students
         if (publishedOnly && this.courseId) {
-          console.log('🔄 Fallback: Loading all videos and filtering client-side for student');
-          console.log('🔄 Error details:', err.status, err.message);
           this.apiService.getVideosByCourse(this.courseId, false).subscribe({
             next: allVideos => {
-              console.log('🔍 All videos received for filtering:', JSON.stringify(allVideos, null, 2));
-
               // Filter published videos client-side - check multiple possible fields
               this.videos = allVideos.filter(video => {
                 const isPublished = video.published === true || video.publish === true || video.status === 'published';
-                console.log(`Video "${video.title}": published=${video.published}, publish=${video.publish}, status=${video.status}, isPublished=${isPublished}`);
                 return isPublished;
               });
-              console.log('✅ Fallback: Filtered published videos client-side:', this.videos);
               this.loading = false;
 
               if (this.videos.length > 0) {
@@ -260,7 +231,6 @@ export class LearnOnlineComponent implements OnInit, OnDestroy {
               }
             },
             error: fallbackErr => {
-              console.error('❌ Fallback also failed:', fallbackErr);
               this.loading = false;
               if (fallbackErr.status === 401) {
                 this.showAlert('Bạn cần đăng nhập để xem video', 'warning');
@@ -296,11 +266,8 @@ export class LearnOnlineComponent implements OnInit, OnDestroy {
 
     this.apiService.getVideosByCourse(this.courseId, publishedOnly).subscribe({
       next: data => {
-        console.log(`🔍 Raw videos received for course ${this.courseId}:`, JSON.stringify(data, null, 2));
-
         // Always apply client-side filtering for students as additional safety measure
         if (publishedOnly) {
-          console.log('🔒 Applying additional client-side filtering for students');
           this.videos = data.filter(video => {
             const isPublished = video.published === true || video.publish === true || video.status === 'published';
             return isPublished;
@@ -312,11 +279,9 @@ export class LearnOnlineComponent implements OnInit, OnDestroy {
         // Find and play the specific video
         const targetVideo = this.videos.find(video => video.videoId === videoId);
         if (targetVideo) {
-          console.log(`🎯 Found target video: ${targetVideo.title}`);
           this.playVideo(targetVideo);
           this.hasNoVideos = false;
         } else {
-          console.log(`❌ Video with ID ${videoId} not found`);
           this.showAlert('Video không tìm thấy hoặc chưa được công bố', 'warning');
           // If specific video not found, play first available video as fallback
           if (this.videos.length > 0) {
@@ -331,7 +296,6 @@ export class LearnOnlineComponent implements OnInit, OnDestroy {
         this.loading = false;
       },
       error: err => {
-        console.error('Lỗi khi tải video cụ thể:', err);
         this.loading = false;
         this.showAlert('Không thể tải video. Vui lòng thử lại!', 'error');
       }
@@ -346,13 +310,8 @@ export class LearnOnlineComponent implements OnInit, OnDestroy {
     if (event) event.preventDefault();
     this.currentVideo = video;
 
-    // Debug log để kiểm tra video object
-    console.log('Video object:', video);
-    console.log('Video ID:', video.videoId);
-
     // Kiểm tra videoId hợp lệ
     if (!video.videoId) {
-      console.error('Video ID is null or undefined:', video);
       this.showAlert('Không thể phát video: ID video không hợp lệ', 'error');
       return;
     }
@@ -362,7 +321,6 @@ export class LearnOnlineComponent implements OnInit, OnDestroy {
       next: (blob) => {
         // Check if video player is available
         if (!this.videoPlayer?.nativeElement) {
-          console.error('Video player element not found');
           this.showAlert('Không thể phát video: Trình phát video không khả dụng', 'error');
           return;
         }
@@ -391,7 +349,6 @@ export class LearnOnlineComponent implements OnInit, OnDestroy {
         this.totalSeekTime = 0;
       },
       error: (err) => {
-        console.error('Lỗi khi tải video:', err);
         let errorMessage = 'Không thể tải video';
 
         if (err.status === 401) {
@@ -407,13 +364,6 @@ export class LearnOnlineComponent implements OnInit, OnDestroy {
         }
 
         this.showAlert(errorMessage, 'error');
-        console.log('Video request details:', {
-          videoId: video.videoId,
-          url: `http://localhost:8080/api/videos/stream/${video.videoId}`,
-          token: localStorage.getItem('token')?.substring(0, 20) + '...',
-          status: err.status,
-          error: err.error
-        });
       }
     });
   }
@@ -422,7 +372,6 @@ export class LearnOnlineComponent implements OnInit, OnDestroy {
     if (!isPlatformBrowser(this.platformId)) return;
 
     if (!this.videoPlayer?.nativeElement) {
-      console.error('Video player element not available for seek limitation');
       return;
     }
 
@@ -446,11 +395,9 @@ export class LearnOnlineComponent implements OnInit, OnDestroy {
       // Nếu nhảy quá 1 giây thì coi là tua (không phải pause/play bình thường)
       if (timeDifference > 1) {
         this.totalSeekTime += timeDifference;
-        console.log(`� Đã tua ${timeDifference.toFixed(1)}s. Tổng đã tua: ${this.totalSeekTime.toFixed(1)}s/${this.maxTotalSeekTime}s`);
 
         // Kiểm tra vượt giới hạn
         if (this.totalSeekTime > this.maxTotalSeekTime) {
-          console.warn('🚫 Đã vượt quá giới hạn tua 2 phút!');
           video.currentTime = lastTime; // Quay về vị trí trước đó
           this.totalSeekTime -= timeDifference; // Trừ lại thời gian vừa tua
           this.showAlert(`Bạn đã sử dụng hết ${this.maxTotalSeekTime/60} phút tua video. Không thể tua thêm!`, 'warning');
@@ -475,15 +422,12 @@ export class LearnOnlineComponent implements OnInit, OnDestroy {
     if (!isPlatformBrowser(this.platformId)) return;
 
     if (!this.videoPlayer?.nativeElement) {
-      console.error('Video player element not available for progress tracking');
       return;
     }
 
     const videoElement = this.videoPlayer.nativeElement;
     let lastUpdateTime = 0;
     const updateInterval = 10; // Update progress every 10 seconds
-
-    console.log('🎥 Setting up progress tracking for video:', video.title);
 
     videoElement.addEventListener('timeupdate', () => {
       const currentTime = videoElement.currentTime;
@@ -494,7 +438,6 @@ export class LearnOnlineComponent implements OnInit, OnDestroy {
         lastUpdateTime = currentTime;
 
         if (duration && currentTime > 0) {
-          console.log(`🎥 Video progress: ${currentTime.toFixed(1)}/${duration.toFixed(1)} seconds`);
           this.updateVideoProgress(video, currentTime, duration);
         }
       }
@@ -502,7 +445,6 @@ export class LearnOnlineComponent implements OnInit, OnDestroy {
 
     // Track when video ends
     videoElement.addEventListener('ended', () => {
-      console.log('🎉 Video completed!');
       const duration = videoElement.duration;
       if (duration) {
         this.updateVideoProgress(video, duration, duration);
@@ -516,19 +458,16 @@ export class LearnOnlineComponent implements OnInit, OnDestroy {
     this.moduleContentService.updateVideoWatchProgress(video.videoId, currentTime, duration).subscribe({
       next: (response: any) => {
         const watchedPercentage = (currentTime / duration) * 100;
-        console.log(`✅ Video progress updated: ${watchedPercentage.toFixed(1)}%`);
 
         // Update local video object
         video.watchedPercentage = watchedPercentage;
         video.isCompleted = watchedPercentage >= 90;
 
         if (video.isCompleted && watchedPercentage >= 99) {
-          console.log('🎉 Video fully completed!');
           this.showAlert('Bạn đã hoàn thành video này!', 'success');
         }
       },
       error: (err: any) => {
-        console.error('❌ Error updating video progress:', err);
       }
     });
   }
@@ -558,7 +497,6 @@ export class LearnOnlineComponent implements OnInit, OnDestroy {
   // Profile component event handlers
   onProfileUpdate() {
     // Handle profile update - could navigate to profile page or refresh data
-    console.log('Profile update requested');
   }
 
   onLogout() {

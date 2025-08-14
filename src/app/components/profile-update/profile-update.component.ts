@@ -126,11 +126,9 @@ export class ProfileUpdateComponent implements OnInit {
           // Luôn load từ API để lấy avatar mới nhất
           this.loadUserFromAPI();
         } catch (error) {
-          console.error('❌ Error decoding token:', error);
           this.showAlert('Lỗi xác thực. Vui lòng đăng nhập lại.');
         }
       } else {
-        console.error('❌ No token found');
         this.showAlert('Không tìm thấy token. Vui lòng đăng nhập lại.');
       }
     }
@@ -157,11 +155,8 @@ export class ProfileUpdateComponent implements OnInit {
             verified: user.verified || false,
             avatarUrl: user.avatarUrl || null
           };
-          
-          console.log('✅ Loaded user from API with avatar:', this.currentUser.avatarUrl);
         },
         error: (error: any) => {
-          console.error('Error loading user from API:', error);
           // Keep token data as fallback
         }
       });
@@ -250,19 +245,8 @@ export class ProfileUpdateComponent implements OnInit {
       formData.append('avatar', this.selectedFile);
     }
 
-    console.log('🔄 Updating user with ID:', this.userId);
-    console.log('📝 Form data being sent:', {
-      username: formData.get('username'),
-      email: formData.get('email'),
-      fullName: formData.get('fullName'),
-      role: formData.get('role'),
-      hasAvatar: !!this.selectedFile,
-      hasPassword: !!password
-    });
-
     this.userService.updateUserWithForm(this.userId, formData).subscribe({
       next: (response: any) => {
-        console.log('✅ Update successful:', response);
         this.showAlert('Cập nhật hồ sơ thành công!');
 
         // Nếu backend trả về token mới, cập nhật lại token để avatarUrl mới được lấy từ token
@@ -274,8 +258,6 @@ export class ProfileUpdateComponent implements OnInit {
         if (this.userId) {
           this.userService.getUserById(this.userId).subscribe({
             next: (updatedUser: User) => {
-              console.log('✅ Reloaded user data:', updatedUser);
-
               // Reset preview và file đã chọn trước khi cập nhật currentUser
               this.imagePreview = null;
               this.selectedFile = null;
@@ -291,7 +273,6 @@ export class ProfileUpdateComponent implements OnInit {
               this.loading = false;
             },
             error: (error: any) => {
-              console.error('❌ Error loading updated user:', error);
               // Still emit success even if reload fails
               this.updateSuccess.emit();
               this.closeModal.emit();
@@ -305,14 +286,6 @@ export class ProfileUpdateComponent implements OnInit {
         }
       },
       error: (error: any) => {
-        console.error('❌ Update error:', error);
-        console.error('❌ Error details:', {
-          status: error.status,
-          statusText: error.statusText,
-          message: error.error?.message,
-          url: error.url
-        });
-        
         let errorMessage = 'Lỗi không xác định';
         if (error.status === 401) {
           errorMessage = 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
@@ -352,8 +325,6 @@ export class ProfileUpdateComponent implements OnInit {
   private showAlert(message: string) {
     if (isPlatformBrowser(this.platformId)) {
       alert(message);
-    } else {
-      console.log('Alert (SSR):', message);
     }
   }
 

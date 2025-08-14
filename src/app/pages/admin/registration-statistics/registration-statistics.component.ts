@@ -7,6 +7,7 @@ import { UserService, User } from '../../../services/user.service';
 import { SessionService } from '../../../services/session.service';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import autoTable from 'jspdf-autotable';
 
 interface RegistrationStatistics {
   today: number;
@@ -123,7 +124,6 @@ export class RegistrationStatisticsComponent implements OnInit {
           this.calculateStatistics(users);
         }
       } catch (apiError) {
-        console.log('API statistics not available, calculating manually...');
         this.calculateStatistics(users);
       }
       
@@ -131,7 +131,6 @@ export class RegistrationStatisticsComponent implements OnInit {
       this.setupAllUsers(users);
       
     } catch (error) {
-      console.error('Error loading registration statistics:', error);
       this.error = 'Không thể tải dữ liệu thống kê';
     } finally {
       this.loading = false;
@@ -639,7 +638,7 @@ export class RegistrationStatisticsComponent implements OnInit {
 
   // Profile component event handlers
   onProfileUpdate() {
-    console.log('Profile update requested');
+    // Profile update requested
   }
 
   onLogout() {
@@ -650,102 +649,183 @@ export class RegistrationStatisticsComponent implements OnInit {
   async exportToPDF() {
     const element = document.getElementById('statistics-content');
     if (!element) {
-      console.error('Element not found for PDF export');
       return;
     }
 
+    const exportBtn = document.querySelector('.btn-pdf') as HTMLButtonElement;
+
     try {
-      // Show loading state
-      const exportBtn = document.querySelector('.btn-pdf') as HTMLButtonElement;
       if (exportBtn) {
         exportBtn.disabled = true;
         exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xuất PDF...';
       }
 
-      // Configure html2canvas options
-      const canvas = await html2canvas(element, {
-        scale: 2, // Higher quality
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        height: element.scrollHeight,
-        width: element.scrollWidth
-      });
+      // Chụp ảnh biểu đồ từ DOM (nếu có)
+      let imgChartDaily = '';
+      let imgChartWeekly = '';
+      let imgChartMonthly = '';
+      const chartDailyEl = document.querySelector('#chart-daily') as HTMLElement;
+      const chartWeeklyEl = document.querySelector('#chart-weekly') as HTMLElement;
+      const chartMonthlyEl = document.querySelector('#chart-monthly') as HTMLElement;
+      if (chartDailyEl) {
+        const chartDailyCanvas = await html2canvas(chartDailyEl, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#fff' });
+        imgChartDaily = chartDailyCanvas.toDataURL('image/png');
+      }
+      if (chartWeeklyEl) {
+        const chartWeeklyCanvas = await html2canvas(chartWeeklyEl, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#fff' });
+        imgChartWeekly = chartWeeklyCanvas.toDataURL('image/png');
+      }
+      if (chartMonthlyEl) {
+        const chartMonthlyCanvas = await html2canvas(chartMonthlyEl, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#fff' });
+        imgChartMonthly = chartMonthlyCanvas.toDataURL('image/png');
+      }
 
-      const imgData = canvas.toDataURL('image/png');
-      
-      // Create PDF
+      // Hàm load font base64
+      const loadFontBase64 = async (path: string) => {
+        const fontFile = await fetch(path);
+        if (!fontFile.ok) {
+          throw new Error(`Không tìm thấy font: ${path}`);
+        }
+        const buffer = await fontFile.arrayBuffer();
+        return btoa(
+          new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+        );
+      };
+
+      // Load font thường và font đậm
+      const [fontRegularBase64, fontBoldBase64] = await Promise.all([
+        loadFontBase64('/assets/fonts/DejaVuSans.ttf'),
+        loadFontBase64('/assets/fonts/DejaVuLGCSans-Bold.ttf')
+      ]);
+
+      // Tạo PDF
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgWidth = 210; // A4 width in mm
-      const pageHeight = 295; // A4 height in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 0;
+      (pdf as any).addFileToVFS('DejaVuSans.ttf', fontRegularBase64);
+      (pdf as any).addFont('DejaVuSans.ttf', 'DejaVuSans', 'normal');
+      (pdf as any).addFileToVFS('DejaVuLGCSans-Bold.ttf', fontBoldBase64);
+      (pdf as any).addFont('DejaVuLGCSans-Bold.ttf', 'DejaVuSans', 'bold');
 
-      // Add title page
-      pdf.setFontSize(20);
-      pdf.text('Báo cáo thống kê đăng ký người dùng', 105, 30, { align: 'center' });
-      
-      pdf.setFontSize(12);
-      pdf.text(`Ngày xuất: ${new Date().toLocaleDateString('vi-VN')}`, 105, 45, { align: 'center' });
-      pdf.text(`Người xuất: ${this.username}`, 105, 55, { align: 'center' });
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+     const marginLeft = 30; // 3 cm
+const marginRight = 20; // 2 cm
+const marginTop = 20; // 2 cm
+const marginBottom = 20; // 2 cm
+const margin = 25
+const topY = marginTop; // hoặc 20 nếu muốn 2cm
 
-      // Add summary statistics
+// === Kích thước trang ===
+const pageWidth = pdf.internal.pageSize.getWidth();
+const pageHeight = pdf.internal.pageSize.getHeight();
+const centerX = pageWidth / 2;
+
+// === Các khoảng cách dùng chung ===
+const lineHeight = 7;
+
+// === Tiêu đề quốc hiệu ở giữa ===
+pdf.setFontSize(14);
+pdf.setFont('DejaVuSans', 'bold');
+pdf.text('CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', centerX, marginTop, { align: 'center' });
+
+pdf.setFontSize(12);
+pdf.setFont('DejaVuSans', 'normal');
+pdf.text('Độc lập - Tự do - Hạnh phúc', centerX, marginTop + lineHeight, { align: 'center' });
+
+// === Ngày tháng căn phải ===
+const today = new Date();
+const formattedDate = `Hà Nội, ngày ${today.getDate().toString().padStart(2, '0')} tháng ${(today.getMonth() + 1)
+  .toString()
+  .padStart(2, '0')} năm ${today.getFullYear()}`;
+pdf.text(formattedDate, pageWidth - marginRight, marginTop + lineHeight * 2 + 5, { align: 'right' });
+
+// Sau đó tiếp tục các phần khác (mục I, bảng...) và dùng marginLeft/marginRight để canh lề
+let yPos2 = marginTop + 6 * lineHeight+10;
+      // Tiêu đề chính
       pdf.setFontSize(14);
-      pdf.text('Tóm tắt thống kê:', 20, 80);
-      
+      pdf.setFont('DejaVuSans', 'bold');
+      pdf.text('BÁO CÁO THỐNG KÊ ĐĂNG KÝ NGƯỜI DÙNG', centerX, topY + 3 * lineHeight + 20, { align: 'center' });
+
+      // Tóm tắt
+      let yPos = topY + 6 * lineHeight + 20;
+      pdf.setFontSize(13);
+      pdf.setFont('DejaVuSans', 'bold');
+      pdf.text('I. TÓM TẮT THỐNG KÊ', margin, yPos); yPos += lineHeight + 3;
+
       pdf.setFontSize(11);
-      let yPos = 95;
-      pdf.text(`• Đăng ký hôm nay: ${this.statistics.today} người`, 25, yPos);
-      yPos += 10;
-      pdf.text(`• Đăng ký tuần này: ${this.statistics.thisWeek} người`, 25, yPos);
-      yPos += 10;
-      pdf.text(`• Đăng ký tháng này: ${this.statistics.thisMonth} người`, 25, yPos);
-      yPos += 10;
-      pdf.text(`• Đăng ký năm này: ${this.statistics.thisYear} người`, 25, yPos);
-      yPos += 10;
-      pdf.text(`• Tổng số người dùng: ${this.statistics.total} người`, 25, yPos);
+      pdf.setFont('DejaVuSans', 'normal');
+      pdf.text(`• Đăng ký hôm nay: ${this.statistics.today}`, margin + 5, yPos); yPos += lineHeight;
+      pdf.text(`• Đăng ký trong tuần: ${this.statistics.thisWeek}`, margin + 5, yPos); yPos += lineHeight;
+      pdf.text(`• Đăng ký trong tháng: ${this.statistics.thisMonth}`, margin + 5, yPos); yPos += lineHeight;
+      pdf.text(`• Đăng ký trong năm: ${this.statistics.thisYear}`, margin + 5, yPos); yPos += lineHeight;
+      pdf.text(`• Tổng số người dùng: ${this.statistics.total}`, margin + 5, yPos); yPos += lineHeight + 5;
 
-      // Add new page for charts
-      pdf.addPage();
-      
-      // Add the main content image
-      pdf.addImage(imgData, 'PNG', 0, 10, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
+      // Bảng danh sách người dùng
+      let tableStartY = yPos + 10;
+      pdf.setFontSize(14);
+      pdf.setFont('DejaVuSans', 'bold');
+      pdf.text('II. DANH SÁCH NGƯỜI DÙNG', margin, tableStartY);
 
-      // Add more pages if needed
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
+      const tableData = this.allUsers.map((user: any, idx: number) => [
+        String(idx + 1),
+        user.username || '',
+        user.fullName || '',
+        user.email || '',
+        this.getFormattedDate(user.createdAt || user.registrationDate),
+        this.getDisplayRole(user.role),
+        user.verified ? 'Đã xác thực' : 'Chưa xác thực'
+      ]);
 
-      // Add footer to all pages
-      const pageCount = pdf.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
-        pdf.setPage(i);
-        pdf.setFontSize(9);
-        pdf.text(`Trang ${i} / ${pageCount}`, 105, 285, { align: 'center' });
-        pdf.text('CMC Learn - Hệ thống quản lý học tập', 105, 290, { align: 'center' });
-      }
 
-      // Save the PDF
-      const fileName = `thong-ke-dang-ky-${new Date().toISOString().split('T')[0]}.pdf`;
+const tableWidth = pageWidth - marginLeft - marginRight; // chiều rộng khả dụng
+
+// Tỉ lệ phần trăm cho từng cột (tổng 100%)
+const colPercents = [8, 16, 20, 20, 14, 12, 10]; 
+
+// Tính cellWidth dựa trên tỉ lệ
+const colWidths = colPercents.map(p => (p / 100) * tableWidth);
+
+autoTable(pdf, {
+  head: [['STT', 'Username', 'Họ tên', 'Email', 'Ngày đăng ký', 'Vai trò', 'Trạng thái']],
+  body: tableData,
+  startY: tableStartY + 7,
+  theme: 'grid',
+  styles: {
+    font: 'DejaVuSans',
+    fontSize: 9,
+    cellPadding: 2,
+    halign: 'left',
+    valign: 'middle',
+  },
+  headStyles: {
+    fillColor: [74, 144, 226],
+    textColor: 255,
+    fontStyle: 'bold',
+    halign: 'center'
+  },
+  columnStyles: {
+    0: { cellWidth: colWidths[0], halign: 'center' },
+    1: { cellWidth: colWidths[1] },
+    2: { cellWidth: colWidths[2] },
+    3: { cellWidth: colWidths[3] },
+    4: { cellWidth: colWidths[4], halign: 'center' },
+    5: { cellWidth: colWidths[5], halign: 'center' },
+    6: { cellWidth: colWidths[6], halign: 'center' },
+  },
+  margin: { left: marginLeft, right: marginRight }
+});
+
+      // Footer
+      pdf.setFontSize(10);
+      pdf.setFont('DejaVuSans', 'italic');
+      pdf.text('CMC Learn - Learning Management System', centerX, pdfHeight - 10, { align: 'center' });
+
+      // Lưu file PDF
+      const fileName = `bao-cao-thong-ke-dang-ky-${today.toISOString().split('T')[0]}.pdf`;
       pdf.save(fileName);
 
-      // Reset button state
-      if (exportBtn) {
-        exportBtn.disabled = false;
-        exportBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Xuất PDF';
-      }
-
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      alert('Có lỗi xảy ra khi xuất PDF. Vui lòng thử lại.');
-      
-      // Reset button state
-      const exportBtn = document.querySelector('.btn-pdf') as HTMLButtonElement;
+    } catch (error: any) {
+      alert(error?.message || 'Lỗi khi xuất PDF, vui lòng thử lại.');
+    } finally {
       if (exportBtn) {
         exportBtn.disabled = false;
         exportBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Xuất PDF';

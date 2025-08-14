@@ -29,6 +29,13 @@ import { StudentGradesComponent } from './pages/student and instructor/student-g
 import { CourseHomeComponent } from './pages/student and instructor/course-home/course-home.component';
 import { CourseReviewComponent } from './pages/student and instructor/course-review/course-review.component';
 
+// Payment components
+import { PaymentSuccessComponent } from './pages/payment-success/payment-success.component';
+import { PaymentHistoryComponent } from './pages/payment-history/payment-history.component';
+import { PaymentDemoComponent } from './pages/payment-demo/payment-demo.component';
+import { VnpayTestComponent } from './pages/vnpay-test/vnpay-test.component';
+import { ZaloPayCallbackComponent } from './pages/zalopay-callback/zalopay-callback.component';
+
 export const routes: Routes = [
   { path: '', component: LoginComponent, data: { title: 'Trang đăng nhập' }, canActivate: [loginRedirectGuard] },
   { path: 'login', component: LoginComponent, data: { title: 'Trang đăng nhập' }, canActivate: [loginRedirectGuard] },
@@ -80,4 +87,12 @@ export const routes: Routes = [
   { path: 'user-management', component: UserManagementComponent, data: { title: 'Quản lý người dùng' }, canActivate: [authGuard, adminGuard] }, // ✅ Added adminGuard
   { path: 'grades', component: GradesComponent, data: { title: 'Quản lý điểm' }, canActivate: [authGuard] },
   { path: 'student-grades', component: StudentGradesComponent, data: { title: 'Điểm của tôi' }, canActivate: [authGuard] },
+  
+  // Payment routes
+  { path: 'payment-success', component: PaymentSuccessComponent, data: { title: 'Kết quả thanh toán' } },
+  { path: 'payment-history', component: PaymentHistoryComponent, data: { title: 'Lịch sử thanh toán' }, canActivate: [authGuard] },
+  { path: 'payment-demo', component: PaymentDemoComponent, data: { title: 'Demo Thanh toán' }, canActivate: [authGuard] },
+  { path: 'vnpay-test', component: VnpayTestComponent, data: { title: 'Test VNPay' }, canActivate: [authGuard] },
+  { path: 'zalopay-callback', component: ZaloPayCallbackComponent, data: { title: 'ZaloPay Callback' } },
+    
 ];

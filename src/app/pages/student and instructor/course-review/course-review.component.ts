@@ -76,7 +76,6 @@ export class CourseReviewComponent implements OnInit {
 
   // Profile component event handlers
   onProfileUpdate() {
-    console.log('Profile update requested');
   }
 
   onLogout() {
@@ -121,11 +120,9 @@ export class CourseReviewComponent implements OnInit {
               });
               
               this.eligibleCourses = eligibleCourses;
-              console.log(`📊 Found ${eligibleCourses.length} courses eligible for review (>= ${this.MIN_COMPLETION_PERCENTAGE}%)`);
               this.loading = false;
             },
             error: (error) => {
-              console.error('Error loading course completions:', error);
               // Fallback: show all courses without completion check
               this.eligibleCourses = courses;
               this.loading = false;
@@ -137,7 +134,6 @@ export class CourseReviewComponent implements OnInit {
         }
       },
       error: (error) => {
-        console.error('Error loading eligible courses:', error);
         this.loading = false;
       }
     });
@@ -150,7 +146,6 @@ export class CourseReviewComponent implements OnInit {
         this.loading = false;
       },
       error: (error) => {
-        console.error('Error loading instructor reviews:', error);
         this.loading = false;
       }
     });
@@ -163,7 +158,6 @@ export class CourseReviewComponent implements OnInit {
         this.loading = false;
       },
       error: (error) => {
-        console.error('Error loading all reviews:', error);
         this.loading = false;
       }
     });
@@ -181,7 +175,6 @@ export class CourseReviewComponent implements OnInit {
         this.courseReviews = reviews;
       },
       error: (error) => {
-        console.error('Error loading course reviews:', error);
       }
     });
   }
@@ -261,7 +254,6 @@ export class CourseReviewComponent implements OnInit {
         alert(this.isEditing ? 'Review updated successfully!' : 'Review submitted successfully!');
       },
       error: (error) => {
-        console.error('Error submitting review:', error);
         this.loading = false;
         alert('Error submitting review. Please try again.');
       }
@@ -281,7 +273,6 @@ export class CourseReviewComponent implements OnInit {
           alert('Review deleted successfully!');
         },
         error: (error) => {
-          console.error('Error deleting review:', error);
           alert('Error deleting review. Please try again.');
         }
       });

@@ -30,7 +30,6 @@ export class SidebaradminComponent implements OnInit {
       filter(event => event instanceof NavigationEnd)
     ).subscribe((event: NavigationEnd) => {
       this.currentRoute = event.url;
-      console.log('Admin Sidebar - Route changed to:', this.currentRoute);
       
       // Auto expand reports if on a reports sub-route
       this.updateReportsExpanded();
@@ -38,7 +37,6 @@ export class SidebaradminComponent implements OnInit {
 
     // Set initial route
     this.currentRoute = this.router.url;
-    console.log('Admin Sidebar - Initial route:', this.currentRoute);
     
     // Auto expand reports if starting on a reports sub-route
     this.updateReportsExpanded();
@@ -90,13 +88,6 @@ export class SidebaradminComponent implements OnInit {
 
   isActiveRoute(route: string): boolean {
     const isActive = this.currentRoute === route || this.currentRoute.startsWith(route + '/');
-    if (route === '/admin/dashboard') {
-      console.log('Admin Dashboard active check:', {
-        currentRoute: this.currentRoute,
-        route: route,
-        isActive: isActive
-      });
-    }
     return isActive;
   }
 

@@ -87,6 +87,29 @@
                 <span class="meta-value">{{ course.categoryName }}</span>
               </div>
             </div>
+            
+            <!-- Action buttons for enrolled courses -->
+            <div class="course-actions">
+              <div class="action-buttons">
+                <button 
+                  class="btn btn-outline-info btn-sm me-2" 
+                  (click)="$event.stopPropagation(); viewCourseReviews(course)"
+                  title="Xem và viết đánh giá cho khóa học"
+                >
+                  <i class="fas fa-star me-1"></i>
+                  Viết đánh giá
+                </button>
+                
+                <button 
+                  class="btn btn-success" 
+                  (click)="$event.stopPropagation(); enterCourse(course)"
+                  title="Vào học khóa học"
+                >
+                  <i class="fas fa-play me-2"></i>
+                  Vào học
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -110,7 +133,7 @@
              class="course-card not-enrolled clickable" 
              (click)="enterCourse(course)"
              [style.cursor]="'pointer'"
-             [title]="'Bấm để đăng ký khóa học: ' + getCourseTitle(course)">
+             [title]="getCoursePrice(course) > 0 ? 'Bấm để thanh toán và đăng ký khóa học: ' + getCourseTitle(course) : 'Bấm để đăng ký khóa học miễn phí: ' + getCourseTitle(course)">
           <div class="course-header">
             <div class="course-thumbnail" *ngIf="course.thumbnailUrl">
               <img [src]="'http://localhost:8080/images/courses/' + course.thumbnailUrl" 
@@ -123,16 +146,23 @@
             
             <div class="course-header-content">
               <h3 class="course-title">{{ getCourseTitle(course) }}</h3>
-              <span class="enrollment-status not-enrolled">🔓 Chưa đăng ký</span>
+              <span class="enrollment-status not-enrolled">
+                <span *ngIf="getCoursePrice(course) > 0">� Có phí</span>
+                <span *ngIf="getCoursePrice(course) === 0">🆓 Miễn phí</span>
+              </span>
             </div>
           </div>
 
           <div class="course-info">
             <p class="course-description">{{ getCourseDescription(course) }}</p>
             <div class="course-meta">
-              <div class="meta-item" *ngIf="getCoursePrice(course)">
+              <div class="meta-item" *ngIf="getCoursePrice(course) > 0">
                 <span class="meta-label">Giá:</span>
-                <span class="meta-value price">{{ formatPrice(getCoursePrice(course)) }}</span>
+                <span class="meta-value price-highlight">{{ formatPrice(getCoursePrice(course)) }}</span>
+              </div>
+              <div class="meta-item" *ngIf="getCoursePrice(course) === 0">
+                <span class="meta-label">Giá:</span>
+                <span class="meta-value free-tag">MIỄN PHÍ</span>
               </div>
               <div class="meta-item">
                 <span class="meta-label">Ngày tạo:</span>
@@ -141,6 +171,52 @@
               <div class="meta-item" *ngIf="course.categoryName">
                 <span class="meta-label">Danh mục:</span>
                 <span class="meta-value">{{ course.categoryName }}</span>
+              </div>
+              <div class="meta-item" *ngIf="course.averageRating || course.totalReviews">
+                <span class="meta-label">Đánh giá:</span>
+                <span class="meta-value rating-info">
+                  <span class="stars">
+                    <i *ngFor="let star of getStarArray(course.averageRating || 0)" 
+                       [class]="star ? 'fas fa-star text-warning' : 'far fa-star text-muted'"></i>
+                  </span>
+                  <span class="rating-text">
+                    {{ (course.averageRating || 0).toFixed(1) }} 
+                    ({{ course.totalReviews || 0 }} đánh giá)
+                  </span>
+                </span>
+              </div>
+              <div class="meta-item" *ngIf="!course.averageRating && !course.totalReviews">
+                <span class="meta-label">Đánh giá:</span>
+                <span class="meta-value text-muted">Chưa có đánh giá</span>
+              </div>
+            </div>
+            
+            <!-- Action button -->
+            <div class="course-actions">
+              <div class="action-buttons">
+                <button 
+                  class="btn btn-outline-info btn-sm me-2" 
+                  (click)="$event.stopPropagation(); viewCourseReviews(course)"
+                  title="Xem đánh giá và nhận xét của khóa học"
+                >
+                  <i class="fas fa-star me-1"></i>
+                  Xem đánh giá
+                </button>
+                
+                <button 
+                  class="btn" 
+                  [ngClass]="getCoursePrice(course) > 0 ? 'btn-payment' : 'btn-free'"
+                  (click)="$event.stopPropagation(); enterCourse(course)"
+                >
+                  <span *ngIf="getCoursePrice(course) > 0">
+                    <i class="fas fa-credit-card me-2"></i>
+                    Thanh toán & Đăng ký
+                  </span>
+                  <span *ngIf="getCoursePrice(course) === 0">
+                    <i class="fas fa-plus me-2"></i>
+                    Đăng ký miễn phí
+                  </span>
+                </button>
               </div>
             </div>
           </div>
@@ -216,6 +292,23 @@
   </div>
 </div>
 </div>
+
+<!-- Payment Modal -->
+<app-payment-modal
+  [course]="selectedCourseForPayment"
+  [isVisible]="isPaymentModalVisible"
+  (closeModal)="closePaymentModal()"
+  (paymentSuccess)="onPaymentSuccess($event)"
+></app-payment-modal>
+
+<!-- Course Reviews Modal -->
+<app-course-reviews-modal
+  [courseId]="selectedCourseForReviews?.courseId"
+  [courseName]="selectedCourseForReviews?.courseName"
+  [canWriteReview]="selectedCourseForReviews?.canWriteReview || false"
+  [isVisible]="isReviewsModalVisible"
+  (closeModal)="closeReviewsModal()"
+></app-course-reviews-modal>
 
 <!-- Notification Component -->
 <app-notification></app-notification>

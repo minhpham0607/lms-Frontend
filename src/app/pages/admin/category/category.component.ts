@@ -81,7 +81,6 @@ export class CategoryComponent implements OnInit {
           const payload = JSON.parse(atob(token.split('.')[1]));
           return payload.role || '';
         } catch (error) {
-          console.error('Error decoding token:', error);
           return '';
         }
       }
@@ -112,9 +111,7 @@ export class CategoryComponent implements OnInit {
           const payload = JSON.parse(atob(token.split('.')[1]));
           this.userRole = payload.role || '';
           this.isAdmin = this.sessionService.isAdmin();
-          console.log('🔍 Category - User role:', this.userRole, 'isAdmin:', this.isAdmin);
         } catch (error) {
-          console.error('Error decoding token:', error);
         }
       }
     }
@@ -136,22 +133,14 @@ export class CategoryComponent implements OnInit {
   fetchCategories(): void {
     // Kiểm tra platform và role trước khi gọi API
     if (!isPlatformBrowser(this.platformId)) {
-      console.log('🔍 Frontend - Skipping API call in SSR');
       return;
     }
 
     const token = localStorage.getItem('token');
     if (!token) {
-      console.log('🔍 Frontend - No token found, skipping API call');
       this.showAlert('Bạn cần đăng nhập để xem danh mục.');
       return;
     }
-
-    console.log('🔍 Frontend - Making request to categories API...');
-    console.log('🔍 Frontend - User role:', this.userRole);
-    console.log('🔍 Frontend - Is admin:', this.isAdmin);
-    console.log('🔍 Frontend - Token exists:', !!token);
-    console.log('🔍 Frontend - Token value:', token?.substring(0, 50) + '...');
 
     // Tạo query string cho params
     let queryString = '';
@@ -166,15 +155,8 @@ export class CategoryComponent implements OnInit {
     this.apiService.get<any[]>(`/categories/list${queryString}`).subscribe({
       next: (data) => {
         this.categories = data;
-        console.log('✅ Categories loaded successfully:', data);
       },
-      error: (err) => {
-        console.error('❌ Error fetching categories:', err);
-        console.error('❌ Error status:', err.status);
-        console.error('❌ Error statusText:', err.statusText);
-        console.error('❌ Error headers:', err.headers);
-        console.error('❌ Error url:', err.url);
-        
+      error: (err) => {        
         if (err.status === 403) {
           this.showAlert('Bạn không có quyền xem danh sách danh mục. Vui lòng đăng nhập với quyền phù hợp.');
         } else if (err.status === 401) {
@@ -227,7 +209,6 @@ export class CategoryComponent implements OnInit {
         },
         error: (err) => {
           this.showAlert('Cập nhật danh mục thất bại', 'error');
-          console.error(err);
           this.isSubmitting = false;
         }
       });
@@ -244,7 +225,6 @@ export class CategoryComponent implements OnInit {
         },
         error: (err) => {
           this.showAlert('Tạo danh mục thất bại', 'error');
-          console.error(err);
           this.isSubmitting = false;
         }
       });
@@ -274,7 +254,6 @@ export class CategoryComponent implements OnInit {
           this.isSubmitting = false;
         },
         error: (err) => {
-          console.error('Lỗi khi xóa:', err);
           this.showAlert('Xóa thất bại.', 'error');
           this.isSubmitting = false;
         }

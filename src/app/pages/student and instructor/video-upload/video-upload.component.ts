@@ -65,11 +65,9 @@ export class VideoUploadComponent implements OnInit {
     this.route.queryParams.subscribe(params => {
       if (params['courseId']) {
         this.courseId = +params['courseId'];
-        console.log('📚 Course ID from route:', this.courseId);
         this.loadCourseInfo();
         this.loadModules(); // Load modules for the specific course
       } else {
-        console.warn('⚠️ No courseId provided in URL');
         this.showAlert('Không tìm thấy ID khóa học trong URL', 'warning');
       }
     });
@@ -103,8 +101,6 @@ export class VideoUploadComponent implements OnInit {
 
   // Navigate to learn-online page to view all videos
   navigateToLearnOnline(): void {
-    console.log('📍 Navigating to Learn Online (All Videos)');
-
     // Navigate to learn-online page to view all videos
     this.router.navigate(['/learn-online'], {
       queryParams: {
@@ -130,7 +126,6 @@ export class VideoUploadComponent implements OnInit {
   // Load courses của user hiện tại - DISABLED since courseId comes from URL
   loadUserCourses() {
     // No longer needed since courseId is provided via URL route params
-    console.log('📝 Course loading disabled - using courseId from URL:', this.courseId);
     return;
     
     /*
@@ -144,10 +139,8 @@ export class VideoUploadComponent implements OnInit {
           this.loadModules(); // Load modules for the first course
         }
         this.loading = false;
-        console.log('Loaded courses:', courses);
       },
       error: (err) => {
-        console.error('Lỗi khi tải danh sách khóa học:', err);
         if (err.status === 401) {
           this.showAlert('Bạn cần đăng nhập để xem khóa học', 'warning');
         } else if (err.status === 403) {
@@ -168,19 +161,15 @@ export class VideoUploadComponent implements OnInit {
       return;
     }
 
-    console.log('🔄 Loading modules for courseId:', this.courseId);
-
     this.moduleService.getModulesByCourse(this.courseId).subscribe({
       next: (modules: ModuleItem[]) => {
         this.modules = modules.sort((a, b) => a.orderNumber - b.orderNumber);
-        console.log('✅ Modules loaded successfully:', this.modules.length, 'modules');
 
         if (this.modules.length === 0) {
           this.showAlert('Khóa học này chưa có module nào. Vui lòng tạo module trước khi upload video.', 'warning');
         }
       },
       error: (err: any) => {
-        console.error('❌ Error loading modules:', err);
         this.modules = [];
         this.showAlert('Lỗi khi tải danh sách module', 'error');
       }
@@ -190,14 +179,12 @@ export class VideoUploadComponent implements OnInit {
   // Handle course selection change - DISABLED since courseId is from URL
   onCourseChange(): void {
     // No longer needed since courseId is fixed from URL
-    console.log('📚 Course change disabled - courseId is from URL:', this.courseId);
     // this.moduleId = null; // Reset module selection
     // this.loadModules(); // Load modules for new course
   }
 
   // Handle module selection change
   onModuleChange(): void {
-    console.log('📂 Module changed to:', this.moduleId);
   }
 
   onFileSelected(event: Event): void {
@@ -220,7 +207,6 @@ export class VideoUploadComponent implements OnInit {
       }
 
       this.selectedFile = file;
-      console.log(`Selected file: ${file.name}, Size: ${(file.size / (1024 * 1024)).toFixed(2)}MB`);
     }
   }
 
@@ -249,7 +235,6 @@ export class VideoUploadComponent implements OnInit {
     // Sử dụng ApiService để upload
     this.apiService.uploadVideo(formData).subscribe({
       next: (res: any) => {
-        console.log('Upload response:', res);
         this.successMessage = true;
         const statusText = this.published ? 'đã xuất bản' : 'ở trạng thái bản nháp';
         this.showAlert(`Upload video thành công! Video ${statusText}.`, 'success');
@@ -267,7 +252,6 @@ export class VideoUploadComponent implements OnInit {
         }, 3000); // Ẩn thông báo thành công sau 3 giây
       },
       error: (err) => {
-        console.error('Upload failed', err);
         this.loading = false;
 
         if (err.status === 401) {
@@ -306,20 +290,12 @@ export class VideoUploadComponent implements OnInit {
     if (this.courseId) {
       // Debug role checking for grades
       const role = this.sessionService.getUserRole();
-      console.log('🔍 VideoUpload->Grades Navigation Debug:', {
-        role: role,
-        isInstructor: this.isInstructor,
-        isAdmin: this.sessionService.isAdmin(),
-        courseId: this.courseId
-      });
       
       if (this.isInstructor || this.sessionService.isAdmin()) {
         // Navigate to instructor grades management page
-        console.log('👨‍🏫 Navigating to grades management for instructor/admin');
         this.router.navigate(['/grades'], { queryParams: { courseId: this.courseId } });
       } else {
         // Navigate to student grades view page
-        console.log('👨‍🎓 Navigating to student-grades for student');
         this.router.navigate(['/student-grades'], { queryParams: { courseId: this.courseId } });
       }
     }
@@ -335,21 +311,13 @@ export class VideoUploadComponent implements OnInit {
     if (this.courseId) {
       // Debug role checking for video
       const role = this.sessionService.getUserRole();
-      console.log('🔍 VideoUpload->Video Navigation Debug:', {
-        role: role,
-        isInstructor: this.isInstructor,
-        isAdmin: this.sessionService.isAdmin(),
-        courseId: this.courseId
-      });
       
       // Check if user is instructor/admin
       if (this.isInstructor || this.sessionService.isAdmin()) {
         // Navigate to video upload page for instructors
-        console.log('👨‍🏫 Staying on video-upload for instructor/admin');
         this.router.navigate(['/video-upload'], { queryParams: { courseId: this.courseId } });
       } else {
         // Navigate to learn online page for students
-        console.log('👨‍🎓 Navigating to learn-online for student');
         this.router.navigate(['/learn-online'], { queryParams: { courseId: this.courseId } });
       }
     }
@@ -368,10 +336,9 @@ export class VideoUploadComponent implements OnInit {
     this.courseService.getCourseById(this.courseId).subscribe({
       next: (course) => {
         this.courseInfo = course;
-        console.log('✅ Course info loaded:', course);
       },
       error: (error) => {
-        console.error('❌ Error loading course info:', error);
+        this.showAlert('Lỗi khi tải thông tin khóa học', 'error');
       }
     });
   }

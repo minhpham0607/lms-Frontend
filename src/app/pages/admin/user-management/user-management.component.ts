@@ -69,29 +69,24 @@ export class UserManagementComponent implements OnInit {
   }
 
   loadUsers(): void {
-    console.log('🔍 Loading users...');
     this.isLoading = true;
     
     // Kiểm tra thông tin user hiện tại
     const userInfo = this.userService.getCurrentUserInfo();
-    console.log('👤 Current user info:', userInfo);
     
     // Kiểm tra token trong localStorage
     if (isPlatformBrowser(this.platformId)) {
       const token = localStorage.getItem('token');
-      console.log('🔑 Token exists:', !!token);
       if (token) {
         try {
           const payload = JSON.parse(atob(token.split('.')[1]));
-          console.log('📝 Token payload:', payload);
         } catch (e) {
-          console.error('❌ Invalid token format:', e);
+          // Invalid token format
         }
       }
     }
     
     if (userInfo.role !== 'admin') {
-      console.error('⚠️ User is not admin, role:', userInfo.role);
       this.notificationService.error('Quyền truy cập bị từ chối', 'Bạn không có quyền truy cập tính năng này.');
       this.isLoading = false;
       return;
@@ -99,20 +94,16 @@ export class UserManagementComponent implements OnInit {
 
     this.userService.getUsers().subscribe({
       next: data => {
-        console.log('✅ Users loaded:', data);
         // Sort by userId descending (newest registration first)
         this.users = data.sort((a, b) => b.userId - a.userId);
         this.applyFilters();
         this.isLoading = false;
       },
       error: err => {
-        console.error('❌ Error loading users:', err);
         this.isLoading = false;
         if (err.status === 403) {
-          console.error('🔒 Forbidden - check token or permissions');
           this.notificationService.error('Không có quyền truy cập', 'Vui lòng đăng nhập lại.');
         } else if (err.status === 401) {
-          console.error('🔐 Unauthorized - token might be expired');
           this.notificationService.error('Phiên đăng nhập hết hạn', 'Vui lòng đăng nhập lại.');
         } else {
           this.notificationService.error('Lỗi tải dữ liệu', 'Lỗi khi tải danh sách người dùng: ' + (err.error?.message || err.message));
@@ -186,13 +177,11 @@ export class UserManagementComponent implements OnInit {
     const { password, ...userWithoutPassword } = user;
     this.editingUser = { ...userWithoutPassword, password: '' };
     this.selectedAvatarFile = null;
-    console.log('✏️ Starting edit for user:', user.username);
   }
 
   cancelEdit(): void {
     this.editingUser = null;
     this.selectedAvatarFile = null;
-    console.log('❌ Edit cancelled');
   }
 
   onAvatarSelected(event: Event): void {
@@ -217,9 +206,8 @@ export class UserManagementComponent implements OnInit {
     const password = this.editingUser.password?.trim();
     if (password && password.length > 0) {
       formData.append('password', password);
-      console.log('🔒 Password will be updated');
     } else {
-      console.log('🔒 Password field empty - no password update');
+      // Password field empty - no password update
     }
 
     if (this.editingUser.cvUrl) {
@@ -230,15 +218,8 @@ export class UserManagementComponent implements OnInit {
       formData.append('avatar', this.selectedAvatarFile);
     }
 
-    // Debug log
-    console.log('📤 FormData contents:');
-    for (let [key, value] of formData.entries()) {
-      console.log(`  ${key}:`, value);
-    }
-
     this.userService.updateUserWithForm(this.editingUser.userId, formData).subscribe({
       next: (response) => {
-        console.log('✅ Update response:', response);
         this.notificationService.success('Cập nhật thành công', 'Thông tin người dùng đã được cập nhật.');
         this.editingUser = null;
         this.selectedAvatarFile = null;
@@ -246,7 +227,6 @@ export class UserManagementComponent implements OnInit {
         this.loadUsers();
       },
       error: err => {
-        console.error('❌ Update failed:', err);
         this.isUpdating = false;
         this.notificationService.error('Cập nhật thất bại', err.error?.message || err.message || 'Có lỗi xảy ra khi cập nhật.');
       }
@@ -266,11 +246,8 @@ export class UserManagementComponent implements OnInit {
       formData.append('cvUrl', user.cvUrl);
     }
 
-    console.log(`🔄 Updating verification status for ${user.username} to ${verified}`);
-
     this.userService.updateUserWithForm(user.userId, formData).subscribe({
       next: (response) => {
-        console.log('✅ Verification update successful:', response);
         // Update the user in the local arrays
         const userIndex = this.users.findIndex(u => u.userId === user.userId);
         if (userIndex !== -1) {
@@ -290,7 +267,6 @@ export class UserManagementComponent implements OnInit {
         alert(`${verified ? 'Phê duyệt' : 'Hủy phê duyệt'} thành công cho ${user.username}!`);
       },
       error: err => {
-        console.error('❌ Verification update failed:', err);
         // Revert the checkbox if update failed
         user.verified = !verified;
         alert('Cập nhật trạng thái thất bại: ' + (err.error?.message || err.message));
@@ -326,7 +302,6 @@ export class UserManagementComponent implements OnInit {
   openCvViewer(cvUrl: string): void {
     this.isCvLoading = true;
     this.viewingCvUrl = `http://localhost:8080/${cvUrl}`;
-    console.log('📄 Opening CV viewer for:', this.viewingCvUrl);
     
     // Simulate loading state for iframe
     setTimeout(() => {
@@ -337,7 +312,6 @@ export class UserManagementComponent implements OnInit {
   closeCvViewer(): void {
     this.viewingCvUrl = null;
     this.isCvLoading = false;
-    console.log('❌ CV viewer closed');
   }
 
   // Add getter methods for template binding
@@ -376,7 +350,7 @@ export class UserManagementComponent implements OnInit {
   }
 
   onProfileUpdate(): void {
-    console.log('Profile update requested');
+    // Profile update requested
   }
 
   onLogout(): void {

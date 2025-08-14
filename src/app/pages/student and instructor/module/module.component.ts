@@ -142,15 +142,11 @@ export class ModuleComponent {
   loadCourseInfo(): void {
     if (!this.courseId) return;
 
-    console.log('🔄 Loading course info for courseId:', this.courseId);
-
     this.courseService.getCourseById(this.courseId).subscribe({
       next: (course: Course) => {
         this.courseInfo = course;
       },
       error: (err: any) => {
-        console.error('❌ Error loading course info:', err);
-
         // Fallback: Create a temporary courseInfo with generic title
         this.courseInfo = {
           courseId: this.courseId!,
@@ -173,11 +169,9 @@ export class ModuleComponent {
         // Try published endpoint first
         this.moduleService.getPublishedModulesByCourse(this.courseId).subscribe({
           next: (data: any[]) => {
-            console.log('Published modules loaded successfully:', data);
             this.processModulesData(data, true); // true indicates this is for students
           },
           error: (err: any) => {
-            console.log('Published endpoint not available, falling back to regular endpoint for student');
             // Immediately fall back to regular endpoint with client-side filtering
             this.loadModulesWithFallback();
           }
@@ -186,11 +180,9 @@ export class ModuleComponent {
         // For instructors/admins, use regular endpoint
         this.moduleService.getModulesByCourse(this.courseId).subscribe({
           next: (data: any[]) => {
-            console.log('All modules loaded for instructor/admin:', data);
             this.processModulesData(data, false); // false indicates this is for instructors/admins
           },
           error: (err: any) => {
-            console.error('Error loading modules for instructor/admin:', err);
             this.modules = [];
             this.filteredModules = [];
             this.showAlert('Không thể tải danh sách modules: ' + (err.error?.message || err.message || 'Unknown error'), 'error');
@@ -206,8 +198,6 @@ export class ModuleComponent {
 
   // Process modules data based on user role
   private processModulesData(data: any[], isForStudent: boolean): void {
-    console.log('Processing modules data:', data);
-
     this.modules = data.map((m: any) => ({
       moduleId: m.moduleId,
       title: m.title,
@@ -227,7 +217,6 @@ export class ModuleComponent {
     // Filter modules for students - only show published modules
     if (isForStudent) {
       this.modules = this.modules.filter(m => m.status === 'Published');
-      console.log('Filtered published modules for student:', this.modules);
     }
 
     // Sort modules by order number
@@ -250,30 +239,23 @@ export class ModuleComponent {
         }, 100);
       });
     }
-
-    console.log('Final processed modules with progress:', this.modules);
   }
 
   // Fallback method for students when published endpoint is not available
   private loadModulesWithFallback(): void {
     if (!this.courseId) return;
 
-    console.log('🔄 Fallback: Loading modules with regular endpoint for student');
-
     // Try the regular endpoint but handle permissions client-side
     this.moduleService.getModulesByCourse(this.courseId).subscribe({
       next: (data: any[]) => {
-        console.log('✅ Fallback successful - Backend response:', data);
         this.processModulesData(data, true); // true indicates this is for students (with filtering)
       },
       error: (err: any) => {
-        console.error('❌ Fallback also failed:', err);
         this.modules = [];
         this.filteredModules = [];
 
         // Show a user-friendly message for students
         if (this.sessionService.isStudent()) {
-          console.log('Student cannot access modules - this may be normal if no published modules exist or permission denied');
           // Don't show error alert to students for permission issues
         } else {
           this.showAlert('Không thể tải danh sách modules: ' + (err.error?.message || err.message || 'Unknown error'), 'error');
@@ -294,7 +276,6 @@ export class ModuleComponent {
     }
 
     this.filteredModules = searchResults;
-    console.log('Search results:', searchResults);
   }
 
   toggleDropdown(item: ModuleItem): void {
@@ -349,13 +330,10 @@ export class ModuleComponent {
 
   // Toggle module expansion
   toggleModule(module: ModuleItem): void {
-    console.log('🔄 toggleModule called, moduleId:', module.moduleId);
-    console.log('📊 Module expandedModules state:', { title: module.title, expanded: module.expanded });
     module.expanded = !module.expanded;
 
     // Load contents if expanding for the first time
     if (module.expanded && module.moduleId && (!module.contents || module.contents.length === 0)) {
-      console.log('� Loading contents for module:', module.moduleId);
       this.loadModuleContents(module);
     }
   }
@@ -364,8 +342,6 @@ export class ModuleComponent {
   loadModuleContents(module: ModuleItem): void {
     if (!module.moduleId) return;
 
-    console.log('🔄 Loading contents for module:', module.moduleId);
-
     // For students, try published endpoint first, but fall back immediately if not available
     if (this.sessionService.isStudent()) {
       this.contentService.getPublishedContentsByModule(module.moduleId).subscribe({
@@ -373,7 +349,6 @@ export class ModuleComponent {
           this.processModuleContents(module, contents, true); // true indicates this is for students
         },
         error: (err: any) => {
-          console.log('Published contents endpoint not available, falling back for module:', module.moduleId);
           // Immediately fall back to regular endpoint with client-side filtering
           this.loadModuleContentsWithFallback(module);
         }
@@ -385,7 +360,6 @@ export class ModuleComponent {
           this.processModuleContents(module, contents, false); // false indicates this is for instructors/admins
         },
         error: (err: any) => {
-          console.error('❌ Error loading module contents for instructor/admin:', err);
           module.contents = [];
         }
       });
@@ -414,22 +388,17 @@ export class ModuleComponent {
   private loadModuleContentsWithFallback(module: ModuleItem): void {
     if (!module.moduleId) return;
 
-    console.log('🔄 Fallback: Loading contents with regular endpoint for student, module:', module.moduleId);
-
     this.contentService.getContentsByModule(module.moduleId).subscribe({
       next: (contents: ContentItem[]) => {
-        console.log('✅ Fallback successful - Loaded contents:', contents);
         this.processModuleContents(module, contents, true); // true indicates this is for students (with filtering)
       },
       error: (err: any) => {
-        console.error('❌ Fallback also failed for module contents:', err);
         module.contents = [];
 
         // Still load progress even if contents failed
         this.loadModuleProgress(module);
 
         if (this.sessionService.isStudent()) {
-          console.log('Student cannot access module contents - this may be normal for module:', module.title);
           // Don't show error alert to students for permission issues
         }
       }
@@ -440,28 +409,19 @@ export class ModuleComponent {
   loadModuleVideos(module: ModuleItem): void {
     if (!module.moduleId) return;
 
-    console.log('🎥 Loading videos for module:', module.moduleId);
-
     // For students, request only published videos
     const publishedOnly = this.sessionService.isStudent();
 
     this.moduleContentService.getVideosByModule(module.moduleId, publishedOnly).subscribe({
       next: (videos: any[]) => {
-        console.log('✅ Videos loaded successfully:', videos);
-        console.log('🔍 Raw video response:', JSON.stringify(videos, null, 2));
-
         // Always apply client-side filtering for students as additional safety
         if (publishedOnly) {
-          console.log('🔒 Applying student filtering for published videos only');
           const filteredVideos = videos.filter(video => {
             const isPublished = video.published === true || video.publish === true || video.status === 'published';
-            console.log(`Video "${video.title}": published=${video.published}, publish=${video.publish}, status=${video.status}, isPublished=${isPublished}`);
             return isPublished;
           });
-          console.log('🔒 Final filtered videos for student:', filteredVideos);
           module.videos = filteredVideos.sort((a, b) => (a.orderNumber || 0) - (b.orderNumber || 0));
         } else {
-          console.log('👨‍🏫 Loading all videos for instructor/admin');
           module.videos = videos.sort((a, b) => (a.orderNumber || 0) - (b.orderNumber || 0));
         }
 
@@ -469,32 +429,22 @@ export class ModuleComponent {
         this.loadModuleProgress(module);
       },
       error: (err: any) => {
-        console.error('❌ Error loading module videos:', err);
-
         // Fallback: if server doesn't support publishedOnly parameter, use client-side filtering
         if (publishedOnly && module.moduleId) {
-          console.log('🔄 Server doesn\'t support publishedOnly for videos, falling back to client-side filtering');
-          console.log('🔄 Error details:', err.status, err.message);
           this.moduleContentService.getVideosByModule(module.moduleId, false).subscribe({
             next: (allVideos: any[]) => {
-              console.log('🔍 All videos received for filtering:', allVideos);
-              console.log('🔍 Raw video data sample:', JSON.stringify(allVideos[0], null, 2));
-
               // Filter published videos - check multiple possible fields
               const publishedVideos = allVideos.filter(video => {
                 const isPublished = video.published === true || video.publish === true || video.status === 'published';
-                console.log(`Video "${video.title}": published=${video.published}, publish=${video.publish}, status=${video.status}, isPublished=${isPublished}`);
                 return isPublished;
               });
 
-              console.log('✅ Fallback: Filtered published videos client-side:', publishedVideos);
               module.videos = publishedVideos.sort((a, b) => (a.orderNumber || 0) - (b.orderNumber || 0));
 
               // Load progress after videos are loaded (fallback)
               this.loadModuleProgress(module);
             },
             error: (fallbackErr: any) => {
-              console.error('❌ Fallback also failed:', fallbackErr);
               module.videos = [];
 
               // Load progress even if videos failed
@@ -515,28 +465,19 @@ export class ModuleComponent {
   loadModuleQuizzes(module: ModuleItem): void {
     if (!module.moduleId) return;
 
-    console.log('📝 Loading quizzes for module:', module.moduleId);
-
     // For students, request only published quizzes
     const publishedOnly = this.sessionService.isStudent();
 
     this.moduleContentService.getQuizzesByModule(module.moduleId, publishedOnly).subscribe({
       next: (quizzes: any[]) => {
-        console.log('✅ Quizzes loaded successfully:', quizzes);
-        console.log('🔍 Raw quiz response:', JSON.stringify(quizzes, null, 2));
-
         // Always apply client-side filtering for students as additional safety
         if (publishedOnly) {
-          console.log('🔒 Applying student filtering for published quizzes only');
           const filteredQuizzes = quizzes.filter(quiz => {
             const isPublished = quiz.published === true || quiz.publish === true;
-            console.log(`Quiz "${quiz.title}": published=${quiz.published}, publish=${quiz.publish}, isPublished=${isPublished}`);
             return isPublished;
           });
-          console.log('🔒 Final filtered quizzes for student:', filteredQuizzes);
           module.quizzes = filteredQuizzes.sort((a, b) => (a.orderNumber || 0) - (b.orderNumber || 0));
         } else {
-          console.log('👨‍🏫 Loading all quizzes for instructor/admin');
           module.quizzes = quizzes.sort((a, b) => (a.orderNumber || 0) - (b.orderNumber || 0));
         }
 
@@ -544,32 +485,22 @@ export class ModuleComponent {
         this.loadModuleProgress(module);
       },
       error: (err: any) => {
-        console.error('❌ Error loading module quizzes:', err);
-
         // Fallback: if server doesn't support publishedOnly parameter, use client-side filtering
         if (publishedOnly && module.moduleId) {
-          console.log('🔄 Server doesn\'t support publishedOnly for quizzes, falling back to client-side filtering');
-          console.log('🔄 Error details:', err.status, err.message);
           this.moduleContentService.getQuizzesByModule(module.moduleId, false).subscribe({
             next: (allQuizzes: any[]) => {
-              console.log('🔍 All quizzes received for filtering:', allQuizzes);
-              console.log('🔍 Raw quiz data sample:', JSON.stringify(allQuizzes[0], null, 2));
-
               // Filter published quizzes - check multiple possible fields
               const publishedQuizzes = allQuizzes.filter(quiz => {
                 const isPublished = quiz.published === true || quiz.publish === true;
-                console.log(`Quiz "${quiz.title}": published=${quiz.published}, publish=${quiz.publish}, isPublished=${isPublished}`);
                 return isPublished;
               });
 
-              console.log('✅ Fallback: Filtered published quizzes client-side:', publishedQuizzes);
               module.quizzes = publishedQuizzes.sort((a, b) => (a.orderNumber || 0) - (b.orderNumber || 0));
 
               // Load progress after quizzes are loaded (fallback)
               this.loadModuleProgress(module);
             },
             error: (fallbackErr: any) => {
-              console.error('❌ Fallback also failed:', fallbackErr);
               module.quizzes = [];
 
               // Load progress even if quizzes failed
@@ -596,14 +527,6 @@ export class ModuleComponent {
       return;
     }
 
-    console.log(`🔄 Loading progress for module: ${module.title}`);
-    console.log(`📊 Backend module completion status:`, {
-      contentCompleted: module.contentCompleted,
-      videoCompleted: module.videoCompleted,
-      testCompleted: module.testCompleted,
-      moduleCompleted: module.moduleCompleted
-    });
-
     // Load overall module progress
     this.moduleContentService.getModuleProgress(module.moduleId).subscribe({
       next: (progress: any) => {
@@ -622,26 +545,19 @@ export class ModuleComponent {
 
     // Load individual content progress
     if (module.contents && module.contents.length > 0) {
-      console.log(`📋 Processing ${module.contents.length} contents in module ${module.title}`);
-      console.log(`📋 Backend contentCompleted status: ${module.contentCompleted}`);
-
       // If backend says all content is completed, mark all contents as completed
       if (module.contentCompleted) {
-        console.log(`✅ Backend says all content completed for module ${module.title}, marking all contents as completed`);
         module.contents.forEach(content => {
           content.isCompleted = true;
           content.viewedAt = new Date().toISOString();
-          console.log(`✅ Set content "${content.title}" as completed`);
         });
         // Don't call updateModuleLevelCompletion here - trust backend data!
       } else {
-        console.log(`⏳ Backend says content not fully completed, loading individual status`);
         // Load individual content progress for more granular control
         module.contents.forEach(content => {
           if (content.contentId) {
             this.moduleContentService.getContentProgress(content.contentId).subscribe({
               next: (progress: any) => {
-                console.log(`✅ Individual content progress for ${content.title}:`, progress);
                 content.isCompleted = progress.viewed || progress.completed || false;
                 content.viewedAt = progress.viewedAt;
 
@@ -651,7 +567,6 @@ export class ModuleComponent {
                 }
               },
               error: (err: any) => {
-                console.error(`❌ Error loading individual content progress for ${content.title}:`, err);
                 content.isCompleted = false;
                 if (module.moduleCompleted === undefined || module.moduleCompleted === null) {
                   this.updateModuleLevelCompletion(module);
@@ -660,36 +575,27 @@ export class ModuleComponent {
             });
           } else {
             content.isCompleted = false;
-            console.log(`⚠️ Content "${content.title}" has no contentId, marking as not completed`);
           }
         });
       }
     } else {
-      console.log(`📋 No contents found in module ${module.title}`);
     }
 
     // Load individual video progress
     if (module.videos && module.videos.length > 0) {
-      console.log(`🎥 Processing ${module.videos.length} videos in module ${module.title}`);
-      console.log(`🎥 Backend videoCompleted status: ${module.videoCompleted}`);
-
       // If backend says all videos are completed, mark all videos as completed
       if (module.videoCompleted) {
-        console.log(`✅ Backend says all videos completed for module ${module.title}, marking all videos as completed`);
         module.videos.forEach(video => {
           video.isCompleted = true;
           video.watchedPercentage = 100;
-          console.log(`✅ Set video "${video.title}" as completed`);
         });
         // Don't call updateModuleLevelCompletion here - trust backend data!
       } else {
-        console.log(`⏳ Backend says videos not fully completed, loading individual status`);
         // Load individual video progress for more granular control
         module.videos.forEach(video => {
           if (video.videoId) {
             this.moduleContentService.getVideoProgress(video.videoId).subscribe({
               next: (progress: any) => {
-                console.log(`✅ Individual video progress for ${video.title}:`, progress);
                 video.isCompleted = progress.completed || false;
                 video.watchedPercentage = progress.watchedPercentage || 0;
 
@@ -699,7 +605,6 @@ export class ModuleComponent {
                 }
               },
               error: (err: any) => {
-                console.error(`❌ Error loading individual video progress for ${video.title}:`, err);
                 video.isCompleted = false;
                 video.watchedPercentage = 0;
                 if (module.moduleCompleted === undefined || module.moduleCompleted === null) {
@@ -710,34 +615,25 @@ export class ModuleComponent {
           } else {
             video.isCompleted = false;
             video.watchedPercentage = 0;
-            console.log(`⚠️ Video "${video.title}" has no videoId, marking as not completed`);
           }
         });
       }
     } else {
-      console.log(`🎥 No videos found in module ${module.title}`);
     }
 
     // Set quiz completion status
     if (module.quizzes && module.quizzes.length > 0) {
-      console.log(`📝 Processing ${module.quizzes.length} quizzes in module ${module.title}`);
-
       module.quizzes.forEach(quiz => {
         if (quiz.quizId) {
           // Check individual quiz completion status instead of using module-level flag
           this.checkQuizCompletion(quiz);
         }
       });
-    } else {
-      console.log(`📝 No quizzes found in module ${module.title}`);
     }
 
     // Final update of module completion status - but only if we don't have reliable backend data
     if (module.moduleCompleted === undefined || module.moduleCompleted === null) {
-      console.log(`🔄 Backend moduleCompleted is missing, calculating locally for module ${module.title}`);
       this.updateModuleLevelCompletion(module);
-    } else {
-      console.log(`✅ Using backend moduleCompleted=${module.moduleCompleted} for module ${module.title} - skipping local calculation`);
     }
   }
 
@@ -755,8 +651,6 @@ export class ModuleComponent {
 
     this.moduleContentService.markContentAsViewed(content.contentId).subscribe({
       next: (response: any) => {
-        console.log('✅ Content marked as viewed successfully');
-
         // Update UI immediately
         content.isCompleted = true;
         content.viewedAt = new Date().toISOString();
@@ -777,12 +671,8 @@ export class ModuleComponent {
   markTestAsCompleted(quizId: number, moduleId: number): void {
     if (!this.sessionService.isStudent()) return;
 
-    console.log('📝 Marking test as completed:', quizId);
-
     this.moduleContentService.completeTest(moduleId, { quizId }).subscribe({
       next: (response: any) => {
-        console.log('✅ Test marked as completed successfully');
-
         // Update UI immediately
         const module = this.modules.find(m => m.moduleId === moduleId);
         if (module && module.quizzes) {
@@ -802,13 +692,10 @@ export class ModuleComponent {
 
   // Refresh module progress after any completion by reloading from backend
   refreshModuleProgress(moduleId: number): void {
-    console.log('🔄 Refreshing module progress from backend for moduleId:', moduleId);
-
     // Reload complete module data with updated progress from backend
     if (this.sessionService.isStudent() && this.courseId) {
       this.moduleService.getPublishedModulesByCourse(this.courseId).subscribe({
         next: (data: any[]) => {
-          console.log('✅ Backend response for refresh:', data);
           // Update only the specific module in our list
           const updatedModule = data.find(m => m.moduleId === moduleId);
           if (updatedModule) {
@@ -832,7 +719,6 @@ export class ModuleComponent {
               // Update individual item statuses based on backend data, which will recalculate module completion
               this.loadModuleProgress(this.modules[moduleIndex]);
 
-              console.log('✅ Module progress refreshed:', this.modules[moduleIndex]);
             }
           }
         },
@@ -879,14 +765,12 @@ export class ModuleComponent {
   isModuleCompleted(module: ModuleItem): boolean {
     // ✅ Always trust backend completion status when available
     if (module.moduleCompleted !== undefined && module.moduleCompleted !== null) {
-      console.log(`🎯 Module ${module.title}: Using backend moduleCompleted = ${module.moduleCompleted}`);
       return module.moduleCompleted;
     }
 
     // ❌ Fallback to percentage calculation only if backend data is missing
     const percentage = this.getModuleCompletionPercentage(module);
     const isCompleted = percentage === 100;
-    console.log(`🎯 Module ${module.title}: Using percentage fallback = ${percentage}% → ${isCompleted}`);
     return isCompleted;
   }
 
@@ -906,8 +790,6 @@ export class ModuleComponent {
     );
 
     if (hasBackendCompletion) {
-      console.log(`🎯 Using backend completion status for module ${module.title} - NOT recalculating`);
-      console.log(`📊 Backend says: contentCompleted=${module.contentCompleted}, videoCompleted=${module.videoCompleted}, testCompleted=${module.testCompleted}, moduleCompleted=${module.moduleCompleted}`);
 
       // Keep backend percentage if available, otherwise calculate
       if (!module.completionPercentage) {
@@ -920,7 +802,6 @@ export class ModuleComponent {
     }
 
     // ✅ Only calculate locally if backend data is missing
-    console.log(`⚠️ Backend completion data missing for module ${module.title}, calculating locally`);
 
     // Calculate completion based on individual items
     let contentCompleted = true;
@@ -960,30 +841,12 @@ export class ModuleComponent {
     // Update completion percentage
     module.completionPercentage = this.getModuleCompletionPercentage(module);
 
-    console.log(`📊 Module ${module.title} completion calculated locally:`, {
-      contentCompleted: module.contentCompleted,
-      videoCompleted: module.videoCompleted,
-      testCompleted: module.testCompleted,
-      moduleCompleted: module.moduleCompleted,
-      completionPercentage: module.completionPercentage,
-      totalContents: module.contents?.length || 0,
-      completedContents: module.contents?.filter(c => c.isCompleted).length || 0,
-      totalVideos: module.videos?.length || 0,
-      completedVideos: module.videos?.filter(v => v.isCompleted).length || 0,
-      totalQuizzes: module.quizzes?.length || 0,
-      completedQuizzes: module.quizzes?.filter(q => q.isCompleted).length || 0
-    });
-
     // Trigger change detection
     this.cdr.detectChanges();
   }
 
   // View content (navigate to content viewer)
   viewContent(content: ContentItem): void {
-    console.log('📖 Viewing content:', content.title);
-    console.log('📖 Content type:', content.contentType);
-    console.log('📖 Content URL:', content.contentUrl);
-
     // Mark content as viewed for progress tracking (only for students)
     if (this.sessionService.isStudent() && content.contentId) {
       // Update UI immediately
@@ -993,7 +856,6 @@ export class ModuleComponent {
       // Make API call to persist the progress
       this.moduleContentService.markContentAsViewed(content.contentId).subscribe({
         next: (response: any) => {
-          console.log('✅ Content marked as viewed successfully');
           // Refresh module progress after content completion
           if (content.moduleId) {
             this.refreshModuleProgress(content.moduleId);
@@ -1020,11 +882,7 @@ export class ModuleComponent {
       }
 
       window.open(fullUrl, '_blank');
-      console.log('🔗 Opening URL:', fullUrl);
     } else {
-      console.warn('⚠️ Content URL not available for:', content.title);
-      console.warn('📋 Content type:', content.contentType);
-
       // Show appropriate message based on content type
       if (content.contentType === 'document') {
         alert('Tài liệu chưa được tải lên cho nội dung này.');
@@ -1191,7 +1049,6 @@ export class ModuleComponent {
 
     this.contentService.createContent(contentDto, this.contentFile || undefined).subscribe({
       next: (result) => {
-        console.log('Content created successfully:', result);
         this.showAlert('Tạo content thành công', 'success');
         this.closeAddContentModal();
 
@@ -1237,7 +1094,6 @@ export class ModuleComponent {
           // Force full UI refresh as final step
           this.forceUIRefresh();
 
-          console.log('✅ Content created and UI updated:', newContent);
         }
       },
       error: (err: any) => {
@@ -1272,7 +1128,6 @@ export class ModuleComponent {
       // Sử dụng updateContentWithFile để upload file mới và cập nhật content
       this.contentService.updateContentWithFile(this.editingContent.contentId, contentDto, this.selectedFile!).subscribe({
         next: (result: any) => {
-          console.log('Content updated with new file:', result);
           this.showAlert('Cập nhật content với file mới thành công', 'success');
           this.closeEditContentModal();
 
@@ -1294,8 +1149,6 @@ export class ModuleComponent {
 
               // Resort contents by order number
               module.contents.sort((a, b) => (a.orderNumber || 0) - (b.orderNumber || 0));
-
-              console.log('✅ UI updated with new file content:', module.contents[contentIndex]);
 
               // Force re-render by updating reference
               module.contents = [...module.contents];
@@ -1323,7 +1176,6 @@ export class ModuleComponent {
               // Force full UI refresh as final step
               this.forceUIRefresh();
 
-              console.log('✅ Content updated with file and UI refreshed:', module.contents[contentIndex]);
             }
           }
         },
@@ -1351,16 +1203,13 @@ export class ModuleComponent {
       // Nếu có thay đổi URL cho link, sử dụng endpoint cập nhật với URL
       (contentDto as any).contentUrl = this.newContent.contentUrl;
       updateObservable = this.contentService.updateContent(this.editingContent.contentId, contentDto);
-      console.log('🔄 Updating content with URL change:', contentDto);
     } else {
       // Nếu không thay đổi URL/file, chỉ cập nhật thông tin
       updateObservable = this.contentService.updateContentInfo(this.editingContent.contentId, contentDto);
-      console.log('🔄 Updating content info only (no URL/file change):', contentDto);
     }
 
     updateObservable.subscribe({
       next: (result: any) => {
-        console.log('Content updated successfully:', result);
         this.showAlert('Cập nhật content thành công', 'success');
         this.closeEditContentModal();
 
@@ -1369,7 +1218,6 @@ export class ModuleComponent {
         if (module && module.contents) {
           const contentIndex = module.contents.findIndex(c => c.contentId === this.editingContent!.contentId);
           if (contentIndex !== -1) {
-            console.log('🔄 Before update:', JSON.stringify(module.contents[contentIndex]));
 
             // Cập nhật toàn bộ content với dữ liệu từ response
             module.contents[contentIndex] = {
@@ -1384,15 +1232,8 @@ export class ModuleComponent {
               isPublished: result.isPublished
             };
 
-            console.log('🔄 After update:', JSON.stringify(module.contents[contentIndex]));
-
-            console.log('🔄 Before sort:', JSON.stringify(module.contents[contentIndex]));
-
             // Resort contents by order number
             module.contents.sort((a, b) => (a.orderNumber || 0) - (b.orderNumber || 0));
-
-            console.log('🔄 After sort:', JSON.stringify(module.contents[contentIndex]));
-            console.log('✅ UI updated with new content data:', module.contents[contentIndex]);
 
             // Force re-render by updating reference
             module.contents = [...module.contents];
@@ -1454,8 +1295,6 @@ export class ModuleComponent {
     // Then update backend
     this.moduleService.updateModuleStatus(item.moduleId, published).subscribe({
       next: (response: any) => {
-        console.log('Status updated successfully:', response);
-
         // Show detailed success notification
         let successMessage = `Module "${item.title}" đã được ${statusText} thành công!`;
 
@@ -1535,7 +1374,6 @@ export class ModuleComponent {
 
     this.moduleService.deleteModule(module.moduleId).subscribe({
       next: () => {
-        console.log('Module deleted successfully');
         this.showAlert('Xóa module thành công', 'success');
 
         // ✅ Cập nhật trực tiếp UI thay vì load lại
@@ -1573,8 +1411,6 @@ export class ModuleComponent {
     // Then update backend
     this.contentService.updateContentStatus(content.contentId, published).subscribe({
       next: () => {
-        console.log('Content status updated successfully');
-
         // Additional change detection to ensure UI is fully updated
         this.cdr.markForCheck();
       },
@@ -1622,7 +1458,6 @@ export class ModuleComponent {
 
     this.contentService.deleteContent(content.contentId).subscribe({
       next: () => {
-        console.log('Content deleted successfully');
         this.showAlert('Xóa content thành công', 'success');
 
         // ✅ Cập nhật UI ngay lập tức
@@ -1651,7 +1486,6 @@ export class ModuleComponent {
           // Force full UI refresh as final step
           this.forceUIRefresh();
 
-          console.log('✅ Content deleted and UI updated');
         }
       },
       error: (err: any) => {
@@ -1757,10 +1591,6 @@ export class ModuleComponent {
   }
 
   submitModule(): void {
-    console.log('submitModule called');
-    console.log('courseId:', this.courseId);
-    console.log('newModule:', this.newModule);
-
     if (!this.courseId) {
       this.showAlert('Không thể tạo module: Không tìm thấy thông tin khóa học.', 'error');
       return;
@@ -1799,10 +1629,8 @@ export class ModuleComponent {
       published: this.newModule.status === 'Published'
     };
 
-    console.log('Calling createModuleForCourse with:', this.courseId, moduleDto);
     this.moduleService.createModuleForCourse(this.courseId, moduleDto).subscribe({
       next: (result) => {
-        console.log('Module created successfully:', result);
         this.showAlert('Tạo module thành công', 'success');
 
         // ✅ Cập nhật trực tiếp UI thay vì load lại
@@ -1848,7 +1676,6 @@ export class ModuleComponent {
 
     this.moduleService.updateModule(updatedModule).subscribe({
       next: (result) => {
-        console.log('Module updated successfully:', result);
         this.showAlert('Cập nhật module thành công', 'success');
 
         // ✅ Cập nhật trực tiếp UI thay vì load lại
@@ -1879,8 +1706,6 @@ export class ModuleComponent {
 
   // Helper method để parse error message từ Angular HttpErrorResponse
   private parseErrorMessage(err: any, defaultMessage: string): string {
-    console.error('Full error object:', JSON.stringify(err, null, 2));
-
     let errorMessage = defaultMessage;
 
     if (err.error) {
@@ -1989,7 +1814,6 @@ export class ModuleComponent {
   // Profile methods
   onProfileUpdate(): void {
     // Handle profile update
-    console.log('Profile update requested');
   }
 
   onLogout(): void {
@@ -2055,7 +1879,6 @@ export class ModuleComponent {
 
   // Navigation methods for left menu
   navigateToHome(): void {
-    console.log('📍 Navigating to Home');
     if (this.courseId) {
       this.router.navigate(['/course-home'], { queryParams: { courseId: this.courseId } });
     } else {
@@ -2065,7 +1888,6 @@ export class ModuleComponent {
 
   navigateToDiscussion(): void {
     this.currentPage = 'Discussion';
-    console.log('📍 Navigating to Discussion');
 
     if (this.courseId) {
       this.router.navigate(['/discussion'], {
@@ -2077,8 +1899,6 @@ export class ModuleComponent {
   }
 
   navigateToGrades(): void {
-    console.log('📍 Navigating to Grades');
-
     // Check if user is instructor/admin
     if (this.canManageContent()) {
       // For instructors, go to grades management with courseId
@@ -2093,12 +1913,9 @@ export class ModuleComponent {
 
   navigateToModules(): void {
     this.currentPage = 'Modules';
-    console.log('📍 Navigated to Modules');
   }
 
   navigateToVideo(): void {
-    console.log('📍 Navigating to Video');
-
     // Check if user is instructor/admin
     if (this.canManageContent()) {
       // For instructors, check if they want to navigate away or just show video content
@@ -2122,7 +1939,6 @@ export class ModuleComponent {
   }
 
   navigateToTests(): void {
-    console.log('📍 Navigating to Tests');
     // Navigate to exam page with courseId
     this.router.navigate(['/exam'], {
       queryParams: {
@@ -2138,8 +1954,6 @@ export class ModuleComponent {
   }
 
   viewVideo(video: any): void {
-    console.log('🎥 Viewing video:', video.title);
-
     if (video.fileUrl) {
       if (this.sessionService.isStudent()) {
         // For students: navigate directly to learn-online page with video parameters
@@ -2228,7 +2042,6 @@ export class ModuleComponent {
     // Video event handlers
     videoElement.addEventListener('loadedmetadata', () => {
       totalDuration = videoElement.duration;
-      console.log('📊 Video duration:', totalDuration);
 
       // Jump to last watched position if available
       if (video.watchedPercentage && video.watchedPercentage > 0) {
@@ -2293,8 +2106,6 @@ export class ModuleComponent {
     video.watchedPercentage = watchedPercentage;
     video.isCompleted = completed;
 
-    console.log(`📊 Video progress: ${watchedPercentage.toFixed(1)}% watched`);
-
     // Make API call to persist progress
     this.moduleContentService.updateVideoWatchProgress(
       video.videoId,
@@ -2302,7 +2113,6 @@ export class ModuleComponent {
       totalDuration
     ).subscribe({
       next: (response: any) => {
-        console.log('✅ Video progress updated successfully');
         // Refresh module progress if video is completed
         if (completed && video.moduleId) {
           this.refreshModuleProgress(video.moduleId);
@@ -2332,7 +2142,6 @@ export class ModuleComponent {
   }
 
   viewQuiz(module: ModuleItem, quiz: any): void {
-    console.log('📝 Viewing quiz:', quiz.title);
 
     // For students, navigate directly to take-exam
     if (this.sessionService.isStudent()) {
@@ -2523,12 +2332,10 @@ export class ModuleComponent {
         // If user has submitted the quiz, consider it completed
         quiz.isCompleted = submission && submission.hasSubmitted === true;
         quiz.score = submission?.result?.score || submission?.score;
-        console.log(`📝 Quiz ${quiz.title} (ID: ${quiz.quizId}) completion status: ${quiz.isCompleted}`, submission);
       },
       error: (error: any) => {
         // If no submission found or error, quiz is not completed
         quiz.isCompleted = false;
-        console.log(`📝 Quiz ${quiz.title} (ID: ${quiz.quizId}) - No submission found`);
       }
     });
   }

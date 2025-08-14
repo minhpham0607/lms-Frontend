@@ -224,7 +224,6 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
         // Delete from database
         this.examService.deleteQuestion(questionToDelete.questionId).subscribe({
           next: (response: any) => {
-            console.log('✅ Question deleted from database:', response);
             this.removeQuestionFromListSilently(index);
             deletedCount++;
             this.checkBulkDeleteComplete(deletedCount, totalToDelete);
@@ -269,7 +268,6 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
   private removeQuestionFromListSilently(index: number): void {
     if (index >= 0 && index < this.questions.length) {
       this.questions.splice(index, 1);
-      console.log(`🗑️ Question removed from list silently, remaining: ${this.questions.length}`);
     }
   }
 
@@ -300,9 +298,6 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
       this.isMobile = window.innerWidth < 768;
     }
 
-    // Debug logging
-    console.log('🔍 QuestionManager component initialized');
-
     // Get parameters from query params
     if (isPlatformBrowser(this.platformId)) {
       this.route.queryParams.subscribe(params => {
@@ -311,11 +306,6 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
         this.quizTitle = params['quizTitle'] ? decodeURIComponent(params['quizTitle']) : 'Quiz';
         this.quizType = params['questionType'] as 'MULTIPLE_CHOICE' | 'ESSAY' || 'MULTIPLE_CHOICE';
         const courseName = params['courseName'];
-
-        console.log('📚 Course ID:', this.courseId);
-        console.log('🧪 Quiz ID:', this.quizId);
-        console.log('📝 Quiz Title:', this.quizTitle);
-        console.log('❓ Question Type:', this.quizType);
 
         // Set course info from params
         if (courseName && courseName.trim()) {
@@ -353,13 +343,9 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
   private loadExistingQuestions(): void {
     if (!this.quizId) return;
 
-    console.log('📚 Loading existing questions for quiz:', this.quizId);
-    
     // Try to use the quiz with questions endpoint
     this.examService.getQuizWithQuestions(this.quizId).subscribe({
       next: (response: any) => {
-        console.log('✅ Loaded quiz with questions:', response);
-        
         const questions = response.questions || [];
         
         if (questions && questions.length > 0) {
@@ -372,7 +358,6 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
           // Update selected correct answer index for loaded question
           this.updateSelectedCorrectAnswerIndex();
           
-          console.log(`✅ Loaded ${this.questions.length} existing questions`);
         } else {
           // No existing questions, add first new question
           this.createAndAddFirstQuestion();
@@ -390,8 +375,6 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
   private loadQuestionsDirectly(): void {
     this.examService.getQuestionsForEditing(this.quizId!).subscribe({
       next: (questions: any[]) => {
-        console.log('✅ Loaded questions directly:', questions);
-        
         if (questions && questions.length > 0) {
           // Convert backend questions to frontend format
           this.questions = questions.map((q: any) => this.convertFromBackendQuestion(q));
@@ -402,7 +385,6 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
           // Update selected correct answer index for loaded question
           this.updateSelectedCorrectAnswerIndex();
           
-          console.log(`✅ Loaded ${this.questions.length} existing questions`);
         } else {
           // No existing questions, add first new question
           this.createAndAddFirstQuestion();
@@ -517,7 +499,6 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
       
       // Then save to database and WAIT for completion before adding new question
       this.saveCurrentQuestionToDatabaseAsync().then(() => {
-        console.log(`💾 Saved current question to database, now creating new question`);
         this.createAndAddNewQuestion();
       }).catch((error: any) => {
         console.error('❌ Error saving current question, but creating new question anyway:', error);
@@ -540,8 +521,6 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
     // Reset selected correct answer index for first question
     this.selectedCorrectAnswerIndex = null;
     
-    console.log(`➕ Added first question ${this.questions.length} (Index: ${this.currentQuestionIndex})`);
-    console.log(`📝 First question data:`, this.currentQuestion);
   }
 
   // Helper method to create and add new question
@@ -555,8 +534,6 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
     // Reset selected correct answer index for new question
     this.selectedCorrectAnswerIndex = null;
     
-    console.log(`➕ Added new question ${this.questions.length} (Index: ${this.currentQuestionIndex})`);
-    console.log(`📝 New question data:`, this.currentQuestion);
   }
 
   // Switch to a specific question
@@ -569,7 +546,6 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
         
         // Then save to database and WAIT for completion before switching
         this.saveCurrentQuestionToDatabaseAsync().then(() => {
-          console.log(`💾 Saved current question to database, now switching`);
           this.performQuestionSwitch(index);
         }).catch((error: any) => {
           console.error('❌ Error saving current question, but switching anyway:', error);
@@ -589,7 +565,6 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
     
     // If question exists in database (has questionId), reload from database
     if (selectedQuestion.questionId) {
-      console.log(`🔄 Loading question ${selectedQuestion.questionId} from database...`);
       this.loadQuestionFromDatabase(selectedQuestion.questionId, index);
     } else {
       // New question not in database yet, use local data
@@ -599,7 +574,6 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
       // Update selected correct answer index
       this.updateSelectedCorrectAnswerIndex();
       
-      console.log(`🔄 Switched to local question ${index + 1}`);
     }
   }
 
@@ -607,8 +581,6 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
   private loadQuestionFromDatabase(questionId: number, index: number): void {
     this.examService.getQuestionById(questionId).subscribe({
       next: (response: any) => {
-        console.log(`✅ Loaded question from database:`, response);
-        
         // Convert backend question to frontend format
         const updatedQuestion = this.convertFromBackendQuestion(response);
         
@@ -620,7 +592,6 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
         // Update selected correct answer index
         this.updateSelectedCorrectAnswerIndex();
         
-        console.log(`🔄 Switched to database question ${index + 1}`, updatedQuestion);
       },
       error: (error: any) => {
         console.error(`❌ Error loading question ${questionId} from database:`, error);
@@ -632,8 +603,6 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
         // Update selected correct answer index
         this.updateSelectedCorrectAnswerIndex();
         
-        console.log(`🔄 Fallback: Switched to local question ${index + 1}`);
-        
         // Show warning to user
         this.showAlert('Không thể tải câu hỏi từ database. Hiển thị dữ liệu local.', 'warning');
       }
@@ -642,32 +611,23 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
 
   // Save current question
   saveCurrentQuestion(): void {
-    console.log('🔍 === Saving Current Question ===');
-    console.log('currentQuestion before save:', this.currentQuestion);
-    console.log('questionText value:', `"${this.currentQuestion.questionText}"`);
-    console.log('questionText length:', this.currentQuestion.questionText?.length);
-    
     if (!this.isFormValid()) {
       this.showAlert('Vui lòng điền đầy đủ thông tin câu hỏi!', 'warning');
-      console.log('❌ Form validation failed!');
       return;
     }
 
     if (this.isEditing) {
       // Update existing question
       this.questions[this.currentQuestionIndex] = { ...this.currentQuestion };
-      console.log(`💾 Updated question ${this.currentQuestionIndex + 1}`);
       this.showAlert('Câu hỏi đã được cập nhật!', 'success');
     } else {
       // Add new question to list
       this.questions.push({ ...this.currentQuestion });
       this.currentQuestionIndex = this.questions.length - 1;
       this.isEditing = true;
-      console.log(`💾 Saved new question ${this.questions.length}`);
       this.showAlert('Câu hỏi đã được lưu!', 'success');
     }
     
-    console.log('Final questions array:', this.questions);
   }
 
   // Save current question silently (without alerts)
@@ -675,13 +635,11 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
     if (this.isEditing) {
       // Update existing question
       this.questions[this.currentQuestionIndex] = { ...this.currentQuestion };
-      console.log(`💾 Auto-updated question ${this.currentQuestionIndex + 1}`);
     } else {
       // Add new question to list
       this.questions.push({ ...this.currentQuestion });
       this.currentQuestionIndex = this.questions.length - 1;
       this.isEditing = true;
-      console.log(`💾 Auto-saved new question ${this.questions.length}`);
     }
   }
 
@@ -690,7 +648,6 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
     return new Promise((resolve, reject) => {
       // Only require question text to save (allow partial saves)
       if (!this.currentQuestion.questionText || this.currentQuestion.questionText.trim().length === 0) {
-        console.log('❌ Cannot save question without question text');
         resolve(null);
         return;
       }
@@ -703,12 +660,8 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
         // New question - save to database (allow partial saves)
         const questionDto = this.convertToQuestionDtoAllowPartial(questionToSave);
         
-        console.log('🚀 Saving NEW question to database (async, partial save allowed):', questionDto);
-        
         this.examService.createQuestion(questionDto).subscribe({
           next: (response: any) => {
-            console.log(`✅ Question saved to database:`, response);
-            
             // Update the question with the returned ID in both current question and array
             if (response.questionId) {
               // Update current question
@@ -719,7 +672,6 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
                 this.questions[this.currentQuestionIndex].questionId = response.questionId;
               }
               
-              console.log(`✅ Updated questionId to ${response.questionId} for current question`);
             }
             resolve(response);
           },
@@ -732,11 +684,8 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
         // Existing question - update in database (allow partial saves)
         const questionDto = this.convertToQuestionDtoAllowPartial(questionToSave);
         
-        console.log('🚀 Updating existing question in database (async, partial save allowed):', questionDto);
-        
         this.examService.updateQuestion(questionToSave.questionId, questionDto).subscribe({
           next: (response: any) => {
-            console.log(`✅ Question updated in database:`, response);
             resolve(response);
           },
           error: (error: any) => {
@@ -752,7 +701,6 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
   saveCurrentQuestionToDatabase(): void {
     // Only require question text to save (allow partial saves)
     if (!this.currentQuestion.questionText || this.currentQuestion.questionText.trim().length === 0) {
-      console.log('❌ Cannot save question without question text');
       return;
     }
 
@@ -764,12 +712,8 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
       // New question - save to database (allow partial saves)
       const questionDto = this.convertToQuestionDtoAllowPartial(questionToSave);
       
-      console.log('🚀 Saving NEW question to database (partial save allowed):', questionDto);
-      
       this.examService.createQuestion(questionDto).subscribe({
         next: (response: any) => {
-          console.log(`✅ Question saved to database:`, response);
-          
           // Update the question with the returned ID in both current question and array
           if (response.questionId) {
             // Update current question
@@ -779,8 +723,6 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
             if (this.currentQuestionIndex >= 0 && this.currentQuestionIndex < this.questions.length) {
               this.questions[this.currentQuestionIndex].questionId = response.questionId;
             }
-            
-            console.log(`✅ Updated questionId to ${response.questionId} for current question`);
           }
         },
         error: (error: any) => {
@@ -792,11 +734,9 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
       // Existing question - update in database (allow partial saves)
       const questionDto = this.convertToQuestionDtoAllowPartial(questionToSave);
       
-      console.log('🚀 Updating existing question in database (partial save allowed):', questionDto);
-      
       this.examService.updateQuestion(questionToSave.questionId, questionDto).subscribe({
         next: (response: any) => {
-          console.log(`✅ Question updated in database:`, response);
+          // Question updated successfully
         },
         error: (error: any) => {
           console.error('❌ Error updating question in database:', error);
@@ -859,11 +799,8 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
     
     // If question exists in database, delete from backend first
     if (questionToDelete.questionId) {
-      console.log('🗑️ Deleting question from database:', questionToDelete.questionId);
-      
       this.examService.deleteQuestion(questionToDelete.questionId).subscribe({
         next: (response: any) => {
-          console.log('✅ Question deleted from database:', response);
           this.removeQuestionFromList(index);
           this.showAlert('Câu hỏi đã được xóa khỏi cơ sở dữ liệu!', 'success');
         },
@@ -896,8 +833,6 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
       this.currentQuestion = this.createNewQuestion();
       this.isEditing = false;
     }
-    
-    console.log(`🗑️ Question removed from list, remaining: ${this.questions.length}`);
   }
 
   // Form validation with debouncing
@@ -930,7 +865,7 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
     this.validationTimeout = setTimeout(() => {
       // Only log validation details when needed
       if (this.currentQuestion.questionText && this.currentQuestion.questionText.trim().length > 0) {
-        console.log('✅ Question validation passed for:', this.currentQuestion.questionText.substring(0, 20) + '...');
+        // Validation passed, no logging needed
       }
     }, 300);
   }
@@ -1024,7 +959,6 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
       }
 
       this.selectedFile = file;
-      console.log('📎 File selected:', file.name);
     }
   }
 
@@ -1038,8 +972,6 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
       this.questions[this.currentQuestionIndex].questionFileUrl = undefined;
       this.questions[this.currentQuestionIndex].questionFileName = undefined;
     }
-    
-    console.log('🗑️ Existing file removed from question');
   }
 
   // Rich text formatting functions for essay questions
@@ -1101,7 +1033,6 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
   // Perform the actual save operation
   private performSaveAllQuestions(): void {
     this.isSaving = true;
-    console.log('💾 Saving all questions:', this.questions);
 
     // Save questions to database
     this.saveQuestionsToDatabase();
@@ -1113,8 +1044,6 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
     this.questions = this.questions.filter(q => q.questionText && q.questionText.trim().length > 0);
     
     if (this.questions.length < originalLength) {
-      console.log(`🧹 Cleaned up ${originalLength - this.questions.length} empty questions`);
-      
       // Adjust current index if needed
       if (this.currentQuestionIndex >= this.questions.length) {
         this.currentQuestionIndex = Math.max(0, this.questions.length - 1);
@@ -1158,12 +1087,8 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
       const formData = new FormData();
       formData.append('file', this.selectedFile);
 
-      console.log('📤 Uploading question file:', this.selectedFile.name);
-
       this.examService.uploadQuestionFile(formData).subscribe({
         next: (response: any) => {
-          console.log('✅ Question file uploaded:', response);
-          
           // Update current question with file info
           this.currentQuestion.questionFileUrl = response.fileUrl;
           this.currentQuestion.questionFileName = response.fileName;
@@ -1198,8 +1123,6 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
       const hasValidText = q.questionText && q.questionText.trim().length > 0;
       const isComplete = this.isQuestionComplete(q);
       
-      console.log(`🔍 New question check: isNew=${isNew}, hasValidText=${hasValidText}, isComplete=${isComplete}`, q.questionText);
-      
       return isNew && hasValidText && isComplete;
     });
     
@@ -1214,8 +1137,6 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
       const hasValidText = q.questionText && q.questionText.trim().length > 0;
       const isComplete = this.isQuestionComplete(q);
       
-      console.log(`🔍 Update question check: hasId=${hasId}, hasChanged=${hasChanged}, hasValidText=${hasValidText}, isComplete=${isComplete}`, q.questionText);
-      
       return hasId && hasChanged && hasValidText && isComplete;
     });
     
@@ -1225,14 +1146,7 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
     let totalToUpdate = questionsToUpdate.length;
     let totalOperations = totalToSave + totalToUpdate;
 
-    console.log('📊 Questions Analysis:');
-    console.log(`- Total questions: ${this.questions.length}`);
-    console.log(`- Questions to save (new): ${totalToSave}`);
-    console.log(`- Questions to update: ${totalToUpdate}`);
-    console.log(`- Total operations: ${totalOperations}`);
-
     if (totalOperations === 0) {
-      console.log('✅ All questions already saved and up-to-date');
       this.isSaving = false;
       this.showAlert(`Tất cả câu hỏi đã được lưu!`, 'info');
       return;
@@ -1242,7 +1156,6 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
     questionsToSave.forEach(question => {
       // Final safety check before sending to API
       if (!question.questionText || question.questionText.trim().length === 0) {
-        console.warn('⚠️ Skipping question with empty text:', question);
         savedCount++;
         this.checkOperationComplete(savedCount + updatedCount, totalOperations);
         return;
@@ -1250,18 +1163,9 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
       
       const questionDto = this.convertToQuestionDto(question);
       
-      console.log('🚀 === Sending NEW Question to API ===');
-      console.log('API Endpoint: /api/questions');
-      console.log('Full URL: http://localhost:8080/api/questions');
-      console.log('Method: POST');
-      console.log('Question DTO being sent:', JSON.stringify(questionDto, null, 2));
-      console.log('Headers will include Authorization token automatically');
-      console.log('=========================================');
-      
       this.examService.createQuestion(questionDto).subscribe({
         next: (response: any) => {
           savedCount++;
-          console.log(`✅ NEW Question saved successfully:`, response);
           
           // Update the question with the returned ID
           const index = this.questions.findIndex(q => q.id === question.id);
@@ -1287,7 +1191,6 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
     questionsToUpdate.forEach(question => {
       // Final safety check before sending to API
       if (!question.questionText || question.questionText.trim().length === 0) {
-        console.warn('⚠️ Skipping update for question with empty text:', question);
         updatedCount++;
         this.checkOperationComplete(savedCount + updatedCount, totalOperations);
         return;
@@ -1298,7 +1201,6 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
       this.examService.updateQuestion(question.questionId!, questionDto).subscribe({
         next: (response: any) => {
           updatedCount++;
-          console.log(`✅ Question updated:`, response);
           this.checkOperationComplete(savedCount + updatedCount, totalOperations);
         },
         error: (error: any) => {
@@ -1314,7 +1216,6 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
   private checkOperationComplete(completedCount: number, totalOperations: number): void {
     if (completedCount === totalOperations) {
       this.isSaving = false;
-      console.log('✅ All question operations completed');
       this.showAlert(`Đã lưu thành công tất cả câu hỏi!`, 'success');
       this.navigateBackToQuiz();
     }
@@ -1329,14 +1230,6 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
 
   // Convert QuestionData to backend DTO format
   private convertToQuestionDto(question: QuestionData): any {
-    console.log('🔍 === Converting QuestionData to DTO ===');
-    console.log('Input QuestionData:', question);
-    console.log('question.quizId:', question.quizId);
-    console.log('question.questionText:', `"${question.questionText}"`);
-    console.log('question.questionText length:', question.questionText?.length);
-    console.log('question.questionType:', question.questionType);
-    console.log('question.points:', question.points);
-    
     const dto: any = {
       quizId: question.quizId,
       questionText: question.questionText,
@@ -1360,20 +1253,11 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
       }
     }
 
-    console.log('🔄 Final DTO:', dto);
     return dto;
   }
 
   // Convert QuestionData to backend DTO format - allow partial saves
   private convertToQuestionDtoAllowPartial(question: QuestionData): any {
-    console.log('🔍 === Converting QuestionData to DTO (Partial Save Allowed) ===');
-    console.log('Input QuestionData:', question);
-    console.log('question.quizId:', question.quizId);
-    console.log('question.questionText:', `"${question.questionText}"`);
-    console.log('question.questionText length:', question.questionText?.length);
-    console.log('question.questionType:', question.questionType);
-    console.log('question.points:', question.points);
-    
     const dto: any = {
       quizId: question.quizId,
       questionText: question.questionText || '',
@@ -1407,7 +1291,6 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
       }
     }
 
-    console.log('🔄 Final DTO (partial save):', dto);
     return dto;
   }
 
@@ -1481,7 +1364,7 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
   }
 
   // Profile methods
-  onProfileUpdate(): void { console.log('Profile update requested'); }
+  onProfileUpdate(): void { /* Profile update requested */ }
   
   onLogout(): void {
     this.sessionService.logout();
@@ -1514,7 +1397,6 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
   // Setup auto-save for form changes
   private setupFormAutoSave(): void {
     // Auto-save disabled - only save on explicit actions (+ button or switch questions)
-    console.log('📝 Auto-save disabled - manual save only');
   }
 
   // Update current question locally only (no database save)
@@ -1523,10 +1405,8 @@ export class QuestionManagerComponent implements OnInit, AfterViewInit {
       if (this.isEditing && this.currentQuestionIndex >= 0 && this.currentQuestionIndex < this.questions.length) {
         // Update existing question in the array locally only
         this.questions[this.currentQuestionIndex] = { ...this.currentQuestion };
-        console.log(`💾 Updated question ${this.currentQuestionIndex + 1} locally only`);
       } else {
         // This case should be handled by the calling function (addNewQuestion)
-        console.log(`📝 New question ready to be added to array by caller`);
       }
     }
   }

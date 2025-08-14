@@ -1,0 +1,448 @@
+/* Payment Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1050;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease-out;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e9ecef;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 12px 12px 0 0;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.modal-footer {
+  padding: 20px 24px;
+  border-top: 1px solid #e9ecef;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  background-color: #f8f9fa;
+  border-radius: 0 0 12px 12px;
+}
+
+/* Course Info */
+.course-info {
+  margin-bottom: 24px;
+}
+
+.course-card {
+  display: flex;
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid #e9ecef;
+}
+
+.course-thumbnail {
+  width: 120px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 6px;
+  margin-right: 16px;
+}
+
+.course-details {
+  flex: 1;
+}
+
+.course-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: #212529;
+}
+
+.course-instructor {
+  color: #6c757d;
+  margin: 0 0 12px 0;
+  font-size: 0.9rem;
+}
+
+.course-price {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.price-label {
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.price-amount {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #e74c3c;
+}
+
+/* Payment Methods */
+.payment-methods {
+  .form-label {
+    font-weight: 600;
+    margin-bottom: 12px;
+    display: block;
+  }
+}
+
+.payment-options {
+  display: grid;
+  gap: 12px;
+}
+
+.payment-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: #667eea;
+    background-color: #f8f9fa;
+  }
+
+  &.selected {
+    border-color: #667eea;
+    background-color: #e7f1ff;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+  }
+}
+
+.payment-option-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  i {
+    font-size: 1.5rem;
+    color: #667eea;
+    width: 24px;
+    text-align: center;
+  }
+
+  span {
+    font-weight: 500;
+  }
+}
+
+.payment-option-radio {
+  input[type="radio"] {
+    width: 20px;
+    height: 20px;
+    accent-color: #667eea;
+  }
+}
+
+/* Payment Summary */
+.payment-summary {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid #e9ecef;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  &.total {
+    font-size: 1.1rem;
+    color: #212529;
+  }
+}
+
+/* Buttons */
+.btn {
+  padding: 12px 24px;
+  border-radius: 6px;
+  border: none;
+  font-weight: 500;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+
+    &:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+  }
+
+  &.btn-secondary {
+    background: #6c757d;
+    color: white;
+
+    &:hover:not(:disabled) {
+      background: #5a6268;
+    }
+  }
+}
+
+/* Alert */
+.alert {
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+
+  &.alert-danger {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+  }
+}
+
+/* VNPay Form Styles */
+.vnpay-form {
+  .card {
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .card-header {
+    border-radius: 8px 8px 0 0 !important;
+  }
+
+  .test-cards {
+    .test-card {
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 10px;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background-color: #e9ecef;
+        border-color: #adb5bd;
+      }
+
+      strong {
+        color: #495057;
+        font-size: 0.9rem;
+      }
+
+      code {
+        background-color: #fff;
+        color: #dc3545;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      small {
+        color: #6c757d;
+        font-size: 0.8rem;
+      }
+    }
+  }
+
+  .payment-amount {
+    .input-group {
+      .form-control {
+        font-weight: 600;
+        font-size: 1.1rem;
+        color: #28a745;
+        background-color: #f8f9fa;
+      }
+
+      .input-group-text {
+        background-color: #e9ecef;
+        border-color: #ced4da;
+      }
+    }
+  }
+
+  .alert-info {
+    border-left: 4px solid #17a2b8;
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .modal-content {
+    width: 95%;
+    margin: 20px;
+  }
+
+  .course-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .course-thumbnail {
+    width: 100%;
+    height: 150px;
+    margin-right: 0;
+    margin-bottom: 16px;
+  }
+
+  .modal-footer {
+    flex-direction: column;
+    
+    .btn {
+      width: 100%;
+    }
+  }
+}
+
+/* ZaloPay Specific Styles */
+.zalopay-form {
+  .card {
+    border-color: #ffc107 !important;
+  }
+
+  .card-header {
+    background-color: #ffc107 !important;
+    color: #212529 !important;
+    border-bottom: 1px solid #f0ad4e;
+  }
+
+  .test-accounts {
+    .test-account {
+      background: #fff3cd;
+      border: 1px solid #ffeaa7;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 10px;
+
+      strong {
+        color: #856404;
+      }
+
+      code {
+        background: #ffc107;
+        color: #212529;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: 600;
+      }
+
+      small {
+        color: #6c757d;
+        font-style: italic;
+      }
+    }
+  }
+
+  .alert-info {
+    border-color: #ffc107;
+    background-color: #fff3cd;
+    color: #856404;
+  }
+}
+
+/* Payment method icons styling */
+.payment-option-content {
+  i.fa-wallet {
+    color: #ffc107;
+  }
+
+  i.fa-credit-card {
+    color: #007bff;
+  }
+
+  i.fa-mobile-alt {
+    color: #e91e63;
+  }
+}

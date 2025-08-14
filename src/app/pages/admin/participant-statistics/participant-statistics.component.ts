@@ -7,6 +7,10 @@ import { UserService } from '../../../services/user.service';
 import { SidebaradminComponent } from '../../../components/sidebaradmin/sidebaradmin.component';
 import { SidebarComponent } from '../../../components/sidebar/sidebar.component';
 import { ProfileComponent } from '../../../components/profile/profile.component';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import html2canvas from 'html2canvas';
+import autoTable from 'jspdf-autotable';
 
 interface ParticipantStatistics {
   totalParticipants: number;
@@ -168,50 +172,30 @@ export class ParticipantStatisticsComponent implements OnInit {
   }
 
   private loadUserInfo() {
-    console.log('🔍 Loading user info...');
     
     // Get username from session service
     const sessionUsername = this.sessionService.getUsername();
-    console.log('📝 Username from session service:', sessionUsername);
     
     this.username = sessionUsername || 'Admin';
     const avatarUrl = localStorage.getItem('avatarUrl');
     this.avatarUrl = avatarUrl || '';
     
-    console.log('� Final username:', this.username);
-    console.log('🖼️ Avatar URL:', this.avatarUrl);
-    
     // Parse JWT token to get user role and ID
     if (isPlatformBrowser(this.platformId)) {
       const token = localStorage.getItem('token');
-      console.log('🔑 Token found:', !!token);
       
       if (token) {
         try {
-          console.log('🔓 Parsing JWT token...');
           const payload = JSON.parse(atob(token.split('.')[1]));
-          console.log('🔍 JWT Payload:', payload);
           
           // Try to get username from token if session service failed
           if (!sessionUsername && payload) {
             this.username = payload.sub || payload.username || payload.email || 'User';
-            console.log('📝 Username from JWT payload:', this.username);
           }
           
           // Robust role detection
           this.userRole = payload.role || payload.roles || payload.authorities || 'instructor';
           this.currentUserId = payload.userId || payload.sub || payload.id;
-          
-          console.log('📋 Extracted from JWT:', {
-            userRole: this.userRole,
-            currentUserId: this.currentUserId,
-            rawRole: payload.role,
-            rawRoles: payload.roles,
-            rawAuthorities: payload.authorities,
-            rawUserId: payload.userId,
-            rawSub: payload.sub,
-            rawId: payload.id
-          });
           
           // Explicit role checking
           if (Array.isArray(payload.roles)) {
@@ -231,71 +215,41 @@ export class ParticipantStatisticsComponent implements OnInit {
             this.isInstructor = roleString.includes('instructor');
           }
           
-          console.log('🔍 Final User Info:', {
-            role: this.userRole,
-            userId: this.currentUserId,
-            isAdmin: this.isAdmin,
-            isInstructor: this.isInstructor,
-            rawPayload: payload
-          });
-          
           // Ensure no overlap - instructor should not be admin
           if (this.isInstructor && this.isAdmin) {
-            console.warn('⚠️ User has both instructor and admin roles, defaulting to instructor');
             this.isAdmin = false;
           }
           
           // Final validation
           if (!this.currentUserId) {
-            console.error('❌ No user ID found in JWT token!');
             throw new Error('User ID not found in token');
           }
           
           if (!this.isAdmin && !this.isInstructor) {
-            console.warn('⚠️ No valid role found, defaulting to instructor');
             this.isInstructor = true;
           }
           
         } catch (error) {
-          console.error('❌ Error parsing JWT token:', error);
-          console.error('🔑 Token details:', {
-            tokenLength: token.length,
-            tokenStart: token.substring(0, 50) + '...',
-            splitParts: token.split('.').length
-          });
-          
           // Fallback to default instructor role
           this.userRole = 'instructor';
           this.isInstructor = true;
           this.isAdmin = false;
           this.currentUserId = null;
           
-          console.log('🚨 Using fallback values:', {
-            userRole: this.userRole,
-            isInstructor: this.isInstructor,
-            isAdmin: this.isAdmin,
-            currentUserId: this.currentUserId
-          });
+          // Fallback to default instructor role
+          this.userRole = 'instructor';
+          this.isInstructor = true;
+          this.isAdmin = false;
+          this.currentUserId = null;
         }
       } else {
-        console.error('❌ No JWT token found in localStorage');
         // Fallback values
         this.userRole = 'instructor';
         this.isInstructor = true;
         this.isAdmin = false;
         this.currentUserId = null;
       }
-    } else {
-      console.warn('⚠️ Not running in browser platform');
     }
-    
-    console.log('✅ User info loading completed:', {
-      username: this.username,
-      userRole: this.userRole,
-      currentUserId: this.currentUserId,
-      isAdmin: this.isAdmin,
-      isInstructor: this.isInstructor
-    });
   }
 
   async loadParticipantStatistics() {
@@ -304,7 +258,6 @@ export class ParticipantStatisticsComponent implements OnInit {
     this.dataSource = 'Đang kết nối API...';
 
     try {
-      console.log('🚀 Starting loadParticipantStatistics...');
       
       // Debug authentication state
       // Check user authentication
@@ -315,11 +268,8 @@ export class ParticipantStatisticsComponent implements OnInit {
         }
       }
 
-      console.log('🔄 Loading participant statistics from API...');
-      
       // Validate required user data
       if (!this.currentUserId) {
-        console.error('❌ No current user ID available!');
         throw new Error('User ID is required but not available. Please login again.');
       }
       
@@ -327,51 +277,33 @@ export class ParticipantStatisticsComponent implements OnInit {
       let coursesData, enrollmentsData, myCoursesData, enrollmentStats;
       
       if (this.isInstructor && !this.isAdmin) {
-        console.log('👨‍🏫 Loading instructor-only data - NO ADMIN APIS...');
         // Instructor: Only load courses they teach
         try {
           // First get all courses, then filter by instructor ID
           const allCourses = await this.courseService.getCourses().toPromise();
-          console.log('🎓 All courses loaded:', allCourses?.length || 0, 'courses');
           
           coursesData = allCourses?.filter(course => {
             const isMatch = course.instructorId === this.currentUserId;
             return isMatch;
           }) || [];
           
-          console.log('✅ Instructor courses loaded:', coursesData.length, 'courses');
-          console.log('📝 Instructor courses:', coursesData.map(c => ({ id: c.courseId, title: c.title, instructorId: c.instructorId })));
           
           // Get enrollment stats for each course
           if (coursesData.length > 0) {
             const coursesWithStats = [];
             for (const course of coursesData) {
               try {
-                console.log(`🔄 Loading enrollments for course ${course.courseId}...`);
-                console.log(`🔑 Current user ID: ${this.currentUserId}`);
-                console.log(`📚 Course instructor ID: ${course.instructorId}`);
-                console.log(`✅ Ownership check: ${course.instructorId === this.currentUserId}`);
                 
                 // KIỂM TRA THÊM: Gọi API để xem course details từ backend
-                console.log(`🔍 Checking course ${course.courseId} details from backend...`);
                 try {
                   const courseDetails = await this.courseService.getCourseById(course.courseId).toPromise();
-                  console.log(`📋 Backend course ${course.courseId} details:`, {
-                    courseId: courseDetails?.courseId,
-                    title: courseDetails?.title,
-                    instructorId: courseDetails?.instructorId,
-                    status: courseDetails?.status
-                  });
                   
                   if (courseDetails?.instructorId !== this.currentUserId) {
-                    console.error(`🚨 MISMATCH: Frontend says course ${course.courseId} instructor is ${course.instructorId}, but backend says ${courseDetails?.instructorId}`);
+                    // Instructor ID mismatch detected
                   }
                 } catch (courseError) {
-                  console.error(`❌ Could not get course ${course.courseId} details from backend:`, courseError);
+                  // Could not get course details from backend
                 }
-                
-                // Debug the API call
-                console.log(`📡 Making API call to: /api/courses/course/${course.courseId}/enrollments`);
                 
                 const enrollments = await this.courseService.getEnrollmentsByCourse(course.courseId).toPromise();
                 coursesWithStats.push({
@@ -379,39 +311,17 @@ export class ParticipantStatisticsComponent implements OnInit {
                   enrollments: enrollments || [],
                   enrollmentCount: enrollments ? enrollments.length : 0
                 });
-                console.log(`✅ Course ${course.courseId} enrollments:`, enrollments?.length || 0);
               } catch (error: any) {
-                console.error(`❌ Failed to load enrollments for course ${course.courseId}:`, error);
-                console.error(`🔍 Error details:`, {
-                  status: error?.status,
-                  message: error?.message,
-                  url: error?.url
-                });
                 
                 if (error?.status === 403) {
-                  console.error(`🚫 403 Forbidden for course ${course.courseId}:`);
-                  console.error(`   - Current user ID: ${this.currentUserId}`);
-                  console.error(`   - Course instructor ID: ${course.instructorId}`);
-                  console.error(`   - User role: ${this.userRole}`);
-                  console.error(`   - Is instructor: ${this.isInstructor}`);
-                  
                   // Log JWT token details for debugging
                   const token = localStorage.getItem('token');
                   if (token) {
                     try {
                       const payload = JSON.parse(atob(token.split('.')[1]));
-                      console.error(`🔍 JWT payload for debugging:`, {
-                        userId: payload.userId,
-                        sub: payload.sub,
-                        id: payload.id,
-                        role: payload.role,
-                        roles: payload.roles,
-                        authorities: payload.authorities,
-                        exp: payload.exp,
-                        iat: payload.iat
-                      });
+                      // JWT payload logged for debugging
                     } catch (parseError) {
-                      console.error(`❌ Could not parse token:`, parseError);
+                      // Could not parse token
                     }
                   }
                 }
@@ -424,8 +334,6 @@ export class ParticipantStatisticsComponent implements OnInit {
               }
             }
             coursesData = coursesWithStats;
-          } else {
-            console.warn('⚠️ No courses found for instructor ID:', this.currentUserId);
           }
           
           // Instructor không cần các API admin khác
@@ -433,16 +341,13 @@ export class ParticipantStatisticsComponent implements OnInit {
           myCoursesData = null;
           enrollmentStats = null;
           
-          console.log('✅ Instructor data loaded successfully');
         } catch (error) {
-          console.error('❌ Failed to load instructor courses:', error);
           coursesData = [];
           enrollmentsData = [];
           myCoursesData = null;
           enrollmentStats = null;
         }
       } else if (this.isAdmin) {
-        console.log('👑 Loading admin data...');
         // Admin: Load all data
         try {
           const promises = [
@@ -452,26 +357,18 @@ export class ParticipantStatisticsComponent implements OnInit {
             this.courseService.getEnrollmentStatistics().toPromise().catch(() => null)
           ];
           [coursesData, enrollmentsData, myCoursesData, enrollmentStats] = await Promise.all(promises);
-          console.log('✅ Admin data loaded successfully');
         } catch (error) {
-          console.error('❌ Failed to load admin data:', error);
           coursesData = [];
           enrollmentsData = [];
           myCoursesData = null;
           enrollmentStats = null;
         }
       } else {
-        console.warn('⚠️ Unknown user role, defaulting to empty data');
         coursesData = [];
         enrollmentsData = [];
         myCoursesData = null;
         enrollmentStats = null;
       }
-
-      console.log('✅ API Response - Courses:', coursesData);
-      console.log('✅ API Response - Enrollments:', enrollmentsData);
-      console.log('✅ API Response - My Courses:', myCoursesData);
-      console.log('✅ API Response - Enrollment Stats:', enrollmentStats);
 
       // Initialize final enrollments array
       let finalEnrollments: EnrollmentData[] = [];
@@ -481,17 +378,10 @@ export class ParticipantStatisticsComponent implements OnInit {
         this.courses = coursesData;
         this.dataSource = 'Dữ liệu thực từ API';
         this.isUsingRealData = true;
-        
-        if (this.isInstructor) {
-          console.log(`👨‍🏫 Instructor courses with stats loaded: ${this.courses.length} courses`);
-        } else {
-          console.log(`👑 Admin viewing all courses: ${this.courses.length} courses`);
-        }
       } else {
         this.courses = [];
         this.dataSource = 'API kết nối nhưng không có dữ liệu khóa học';
         this.isUsingRealData = false;
-        console.log('⚠️ No courses data available');
       }
 
       // Process enrollments data based on role
@@ -500,7 +390,6 @@ export class ParticipantStatisticsComponent implements OnInit {
         const instructorEnrollments: EnrollmentData[] = [];
         if (coursesData && coursesData.length > 0) {
           coursesData.forEach((course: any) => {
-            console.log(`📊 Processing course ${course.courseId} enrollments:`, course.enrollments);
             if (course.enrollments && course.enrollments.length > 0) {
               course.enrollments.forEach((enrollment: any, index: number) => {
                 // API trả về UserDTO, chúng ta xử lý thành enrollment format
@@ -517,15 +406,11 @@ export class ParticipantStatisticsComponent implements OnInit {
                   fullName: enrollment.fullName
                 };
                 instructorEnrollments.push(enrollmentData);
-                console.log(`✅ Added enrollment:`, enrollmentData);
               });
-            } else {
-              console.log(`⚠️ No enrollments found for course ${course.courseId}`);
             }
           });
         }
         finalEnrollments = instructorEnrollments;
-        console.log('👨‍🏫 Instructor enrollments processed:', finalEnrollments.length);
       } else {
         // Admin: Combine enrollments data from different sources
         if (enrollmentsData && enrollmentsData.length > 0) {
@@ -538,7 +423,6 @@ export class ParticipantStatisticsComponent implements OnInit {
             status: enrollment.status || 'active'
           }));
           finalEnrollments = [...finalEnrollments, ...standardEnrollments];
-          console.log('✅ Added standard enrollments:', standardEnrollments.length);
         }
 
         // Process my courses data (EnrollmentsDTO) for admin if available
@@ -562,9 +446,7 @@ export class ParticipantStatisticsComponent implements OnInit {
               finalEnrollments.push(newEnrollment);
             }
           });
-          console.log('✅ Added my courses enrollments:', myCoursesEnrollments.length);
         }
-        console.log('👑 Admin enrollments processed:', finalEnrollments.length);
       }
 
       if (finalEnrollments.length > 0) {
@@ -573,14 +455,12 @@ export class ParticipantStatisticsComponent implements OnInit {
         this.dataSource = this.isInstructor 
           ? `Dữ liệu từ khóa học của tôi (${finalEnrollments.length} đăng ký)`
           : `Dữ liệu thực từ API (${finalEnrollments.length} đăng ký)`;
-        console.log('✅ Using combined enrollments data:', this.enrollments.length, 'enrollments');
       } else {
         this.enrollments = [];
         this.isUsingRealData = this.courses.length > 0; // True if we have courses data
         this.dataSource = this.courses.length > 0 
           ? (this.isInstructor ? 'Khóa học của tôi (chưa có học viên)' : 'Chỉ có dữ liệu khóa học từ API')
           : 'API kết nối nhưng không có dữ liệu';
-        console.log('⚠️ No enrollments data available');
       }
 
       // Generate statistics from the real data
@@ -588,10 +468,7 @@ export class ParticipantStatisticsComponent implements OnInit {
       this.generateChartData();
       this.setupAllEnrollments();
 
-      console.log('✅ Participant statistics loaded successfully from real API data');
-
-    } catch (error) {
-      console.error('❌ Error loading participant statistics from API:', error);
+    } catch (error) {      
       
       // Determine error type for better user feedback
       let errorMessage = 'Không thể kết nối với API. ';
@@ -637,7 +514,6 @@ export class ParticipantStatisticsComponent implements OnInit {
   }
 
   private generateStatistics() {
-    console.log('📊 Generating participant statistics...');
     
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -689,22 +565,10 @@ export class ParticipantStatisticsComponent implements OnInit {
       );
       uniqueCourses = instructorCourses.length;
       averagePerCourse = uniqueCourses > 0 ? this.enrollments.length / uniqueCourses : 0;
-      
-      console.log('📊 Instructor average calculation:', {
-        instructorCourses: instructorCourses.length,
-        totalEnrollments: this.enrollments.length,
-        averagePerCourse: averagePerCourse
-      });
     } else {
       // Admin: Calculate average based on all courses with enrollments
       uniqueCourses = new Set(this.enrollments.map(e => e.courseId)).size;
       averagePerCourse = uniqueCourses > 0 ? this.enrollments.length / uniqueCourses : 0;
-      
-      console.log('📊 Admin average calculation:', {
-        coursesWithEnrollments: uniqueCourses,
-        totalEnrollments: this.enrollments.length,
-        averagePerCourse: averagePerCourse
-      });
     }
 
     // Generate top courses
@@ -741,8 +605,6 @@ export class ParticipantStatisticsComponent implements OnInit {
       topCourses,
       recentEnrollments: this.enrollments.slice(0, 10)
     };
-
-    console.log('📊 Generated statistics:', this.statistics);
     
     // Generate instructor-specific statistics if needed
     if (this.isInstructor && !this.isAdmin) {
@@ -751,7 +613,6 @@ export class ParticipantStatisticsComponent implements OnInit {
   }
 
   private generateInstructorStats() {
-    console.log('👨‍🏫 Generating instructor-specific statistics...');
     
     // Get instructor's courses
     const instructorCourses = this.courses.filter(course => 
@@ -791,8 +652,6 @@ export class ParticipantStatisticsComponent implements OnInit {
       mostPopularCourse: mostPopular?.course.title || 'Chưa có',
       leastPopularCourse: leastPopular?.course.title || 'Chưa có'
     };
-    
-    console.log('👨‍🏫 Instructor statistics:', this.instructorStats);
   }
 
   private generateMonthlyEnrollments(): ChartData[] {
@@ -1093,7 +952,6 @@ export class ParticipantStatisticsComponent implements OnInit {
 
   // Course participants modal methods
   async showCourseParticipants(course: TopCourseData) {
-    console.log('📋 Showing participants for course:', course);
     
     this.selectedCourseForParticipants = this.courses.find(c => c.courseId === course.courseId) || null;
     this.showParticipantsModal = true;
@@ -1109,7 +967,6 @@ export class ParticipantStatisticsComponent implements OnInit {
 
       if (courseEnrollments.length === 0 && this.isInstructor) {
         // If no enrollments found locally, try to fetch from API
-        console.log(`🔄 Fetching fresh enrollments for course ${course.courseId}...`);
         const freshEnrollments = await this.courseService.getEnrollmentsByCourse(course.courseId).toPromise();
         
         if (freshEnrollments && freshEnrollments.length > 0) {
@@ -1128,14 +985,11 @@ export class ParticipantStatisticsComponent implements OnInit {
           }));
           
           this.courseParticipants = convertedEnrollments;
-          console.log(`✅ Fresh enrollments loaded: ${convertedEnrollments.length}`);
         } else {
           this.courseParticipants = [];
-          console.log('⚠️ No enrollments found for this course');
         }
       } else {
         this.courseParticipants = courseEnrollments;
-        console.log(`✅ Found ${courseEnrollments.length} participants for course ${course.courseId}`);
       }
 
       // Sort by enrollment date (newest first)
@@ -1144,7 +998,6 @@ export class ParticipantStatisticsComponent implements OnInit {
       );
 
     } catch (error) {
-      console.error('❌ Error loading course participants:', error);
       this.participantsError = 'Không thể tải danh sách người tham gia. Vui lòng thử lại.';
       this.courseParticipants = [];
     } finally {
@@ -1174,7 +1027,6 @@ export class ParticipantStatisticsComponent implements OnInit {
 
   // Course statistics modal methods
   showCourseStatistics(statType: string, statTitle: string) {
-    console.log(`📊 Showing course statistics for: ${statType}`);
     
     this.selectedStatType = statType;
     this.selectedStatTitle = statTitle;
@@ -1233,10 +1085,8 @@ export class ParticipantStatisticsComponent implements OnInit {
       });
 
       this.courseStatsList = filteredCourses;
-      console.log(`✅ Found ${filteredCourses.length} courses for ${statType}`);
 
     } catch (error) {
-      console.error('❌ Error loading course statistics:', error);
       this.courseStatsError = 'Không thể tải danh sách khóa học. Vui lòng thử lại.';
       this.courseStatsList = [];
     } finally {
@@ -1274,7 +1124,6 @@ export class ParticipantStatisticsComponent implements OnInit {
 
   // Data refresh and export
   refreshData() {
-    console.log('🔄 Refreshing participant statistics data...');
     this.loadParticipantStatistics();
   }
 
@@ -1284,7 +1133,6 @@ export class ParticipantStatisticsComponent implements OnInit {
       await this.courseService.getCourses().toPromise();
       return true;
     } catch (error) {
-      console.log('❌ API connection failed:', error);
       return false;
     }
   }
@@ -1313,17 +1161,7 @@ export class ParticipantStatisticsComponent implements OnInit {
   }
 
   debugAPIData() {
-    console.log('🔍 Debug API Data:');
-    console.log('📊 Current Statistics:', this.statistics);
-    console.log('🎓 Courses:', this.courses);
-    console.log('📝 Enrollments:', this.enrollments);
-    console.log('📈 Chart Data:', {
-      monthly: this.monthlyEnrollments,
-      courses: this.courseEnrollments,
-      categories: this.categoryEnrollments
-    });
-    console.log('🔗 Data Source:', this.dataSource);
-    console.log('✅ Using Real Data:', this.isUsingRealData);
+    // Debug information logged to browser console for development
   }
 
   exportStatistics() {
@@ -1362,7 +1200,7 @@ export class ParticipantStatisticsComponent implements OnInit {
 
   // Profile component event handlers
   onProfileUpdate() {
-    console.log('Profile update requested');
+    // Profile update requested
   }
 
   onLogout() {
@@ -1371,20 +1209,18 @@ export class ParticipantStatisticsComponent implements OnInit {
 
   // Debug API connectivity
   async debugAPIConnectivity() {
-    console.group('🔧 API Connectivity Debug');
+    // API Connectivity Debug
     
     // Check authentication first
     if (typeof localStorage !== 'undefined') {
       const token = localStorage.getItem('token');
       if (!token || !this.sessionService.isTokenValid(token)) {
-        console.log('❌ Cannot test API - invalid token');
-        console.groupEnd();
         return;
       }
     }
 
     try {
-      console.log('🔄 Testing API endpoints...');
+      // Testing API endpoints...
       
       // Test each endpoint individually
       const endpoints = [
@@ -1396,67 +1232,42 @@ export class ParticipantStatisticsComponent implements OnInit {
 
       for (const endpoint of endpoints) {
         try {
-          console.log(`Testing ${endpoint.name}...`);
           const result = await endpoint.test();
-          console.log(`✅ ${endpoint.name}:`, result);
         } catch (error) {
-          console.log(`❌ ${endpoint.name}:`, error);
+          // Endpoint error handled
         }
       }
       
     } catch (error) {
-      console.log('❌ General error:', error);
+      // General error handled
     }
-    
-    console.groupEnd();
   }
 
   // Test specific course enrollment access
   async testCourseAccess(courseId: number) {
-    console.group(`🔧 Testing Course ${courseId} Access`);
+    // Testing Course Access
     
     try {
       // 1. Get course details
-      console.log(`📋 Getting course ${courseId} details...`);
       const courseDetails = await this.courseService.getCourseById(courseId).toPromise();
-      console.log(`Course details:`, courseDetails);
       
       // 2. Check ownership
       const isOwner = courseDetails?.instructorId === this.currentUserId;
-      console.log(`Ownership check: ${isOwner} (course.instructorId=${courseDetails?.instructorId}, currentUserId=${this.currentUserId})`);
       
       // 3. Try to get enrollments
-      console.log(`📊 Trying to get enrollments for course ${courseId}...`);
       const enrollments = await this.courseService.getEnrollmentsByCourse(courseId).toPromise();
-      console.log(`✅ Success! Enrollments:`, enrollments);
       
     } catch (error: any) {
-      console.error(`❌ Failed to access course ${courseId}:`, error);
-      console.error(`Status: ${error.status}, Message: ${error.message}`);
+      // Failed to access course
     }
-    
-    console.groupEnd();
   }
 
   // Additional debug methods
   debugTableState() {
-    console.log('📋 Table Debug State:');
-    console.log('Total enrollments:', this.totalEnrollments);
-    console.log('Filtered enrollments:', this.filteredEnrollments.length);
-    console.log('Paginated enrollments:', this.paginatedEnrollments.length);
-    console.log('Current page:', this.currentPage);
-    console.log('Items per page:', this.itemsPerPage);
-    console.log('Total pages:', this.totalPages);
-    console.log('Filters:', {
-      search: this.searchTerm,
-      course: this.selectedCourse,
-      category: this.selectedCategory,
-      time: this.selectedTimeFilter
-    });
+    // Table Debug State - information available for development debugging
   }
 
   forceFixCourseTitles() {
-    console.log('🔧 Force fixing course titles...');
     this.enrollments.forEach(enrollment => {
       if (!enrollment.courseTitle || enrollment.courseTitle.includes('Khóa học')) {
         const course = this.courses.find(c => c.courseId === enrollment.courseId);
@@ -1466,15 +1277,190 @@ export class ParticipantStatisticsComponent implements OnInit {
       }
     });
     this.setupAllEnrollments();
-    console.log('✅ Course titles fixed');
   }
+  
+  async exportToPDF() {
+    const element = document.getElementById('statistics-content');
+    if (!element) {
+      return;
+    }
 
-  getDisplayRole(role: string): string {
-    switch (role?.toLowerCase()) {
-      case 'admin': return 'Quản trị viên';
-      case 'instructor': return 'Giảng viên';
-      case 'student': return 'Học viên';
-      default: return role || 'Admin';
+    const exportBtn = document.querySelector('.btn-pdf') as HTMLButtonElement;
+
+    try {
+      if (exportBtn) {
+        exportBtn.disabled = true;
+        exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xuất PDF...';
+      }
+
+      // Chụp ảnh nội dung
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff'
+      });
+
+      // Chụp ảnh biểu đồ từ DOM (nếu có)
+      let imgChartMonthly = '';
+      let imgChartCourse = '';
+      let imgChartCategory = '';
+      const chartMonthlyEl = document.querySelector('#chart-monthly') as HTMLElement;
+      const chartCourseEl = document.querySelector('#chart-course') as HTMLElement;
+      const chartCategoryEl = document.querySelector('#chart-category') as HTMLElement;
+      if (chartMonthlyEl) {
+        const chartMonthlyCanvas = await html2canvas(chartMonthlyEl, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#fff' });
+        imgChartMonthly = chartMonthlyCanvas.toDataURL('image/png');
+      }
+      if (chartCourseEl) {
+        const chartCourseCanvas = await html2canvas(chartCourseEl, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#fff' });
+        imgChartCourse = chartCourseCanvas.toDataURL('image/png');
+      }
+      if (chartCategoryEl) {
+        const chartCategoryCanvas = await html2canvas(chartCategoryEl, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#fff' });
+        imgChartCategory = chartCategoryCanvas.toDataURL('image/png');
+      }
+
+      // Hàm load font base64
+      const loadFontBase64 = async (path: string) => {
+        const fontFile = await fetch(path);
+        if (!fontFile.ok) {
+          throw new Error(`Không tìm thấy font: ${path}`);
+        }
+        const buffer = await fontFile.arrayBuffer();
+        return btoa(
+          new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+        );
+      };
+
+      // Load font thường và font đậm
+      const [fontRegularBase64, fontBoldBase64] = await Promise.all([
+        loadFontBase64('/assets/fonts/DejaVuSans.ttf'),
+        loadFontBase64('/assets/fonts/DejaVuLGCSans-Bold.ttf')
+      ]);
+
+      // Tạo PDF
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      (pdf as any).addFileToVFS('DejaVuSans.ttf', fontRegularBase64);
+      (pdf as any).addFont('DejaVuSans.ttf', 'DejaVuSans', 'normal');
+      (pdf as any).addFileToVFS('DejaVuLGCSans-Bold.ttf', fontBoldBase64);
+      (pdf as any).addFont('DejaVuLGCSans-Bold.ttf', 'DejaVuSans', 'bold');
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const marginLeft = 30; // 3 cm
+const marginRight = 20; // 2 cm
+const marginTop = 20; // 2 cm
+const marginBottom = 20; // 2 cm
+const margin = 25
+const topY = marginTop; // hoặc 20 nếu muốn 2cm
+
+// === Kích thước trang ===
+const pageWidth = pdf.internal.pageSize.getWidth();
+const pageHeight = pdf.internal.pageSize.getHeight();
+const centerX = pageWidth / 2;
+
+// === Các khoảng cách dùng chung ===
+const lineHeight = 7;
+
+// === Tiêu đề quốc hiệu ở giữa ===
+pdf.setFontSize(14);
+pdf.setFont('DejaVuSans', 'bold');
+pdf.text('CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', centerX, marginTop, { align: 'center' });
+
+pdf.setFontSize(12);
+pdf.setFont('DejaVuSans', 'normal');
+pdf.text('Độc lập - Tự do - Hạnh phúc', centerX, marginTop + lineHeight, { align: 'center' });
+
+// === Ngày tháng căn phải ===
+const today = new Date();
+const formattedDate = `Hà Nội, ngày ${today.getDate().toString().padStart(2, '0')} tháng ${(today.getMonth() + 1)
+  .toString()
+  .padStart(2, '0')} năm ${today.getFullYear()}`;
+pdf.text(formattedDate, pageWidth - marginRight, marginTop + lineHeight * 2 + 5, { align: 'right' });
+
+// Sau đó tiếp tục các phần khác (mục I, bảng...) và dùng marginLeft/marginRight để canh lề
+let yPos = marginTop + 6 * lineHeight+10;
+      // Tiêu đề chính
+      pdf.setFontSize(14);
+      pdf.setFont('DejaVuSans', 'bold');
+      pdf.text('BÁO CÁO THỐNG KÊ NGƯỜI THAM GIA KHÓA HỌC', centerX, topY + 3 * lineHeight + 20, { align: 'center' });
+
+      // Tóm tắt
+      let yPos2 = topY + 6 * lineHeight + 40;
+      pdf.setFontSize(13);
+      pdf.setFont('DejaVuSans', 'bold');
+      pdf.text('I. TÓM TẮT THỐNG KÊ', margin, yPos); yPos += lineHeight + 3;
+
+      pdf.setFontSize(11);
+      pdf.setFont('DejaVuSans', 'normal');
+      pdf.text(`• Đăng ký hôm nay: ${this.statistics.todayEnrollments}`, margin + 5, yPos); yPos += lineHeight;
+      pdf.text(`• Đăng ký trong tuần: ${this.statistics.thisWeekEnrollments}`, margin + 5, yPos); yPos += lineHeight;
+      pdf.text(`• Đăng ký trong tháng: ${this.statistics.thisMonthEnrollments}`, margin + 5, yPos); yPos += lineHeight;
+      pdf.text(`• Đăng ký trong năm: ${this.statistics.thisYearEnrollments}`, margin + 5, yPos); yPos += lineHeight;
+      pdf.text(`• Tổng số người tham gia: ${this.statistics.totalParticipants}`, margin + 5, yPos); yPos += lineHeight;
+      pdf.text(`• Trung bình mỗi khóa học: ${this.statistics.averagePerCourse}`, margin + 5, yPos); yPos += lineHeight + 5;
+
+      // Bảng danh sách người tham gia
+      let tableStartY = yPos + 10;
+      pdf.setFontSize(14);
+      pdf.setFont('DejaVuSans', 'bold');
+      pdf.text('II. DANH SÁCH NGƯỜI THAM GIA', margin, tableStartY);
+
+      const tableData = this.enrollments.map((enr: any) => [
+        String(enr.enrollmentId),
+        enr.courseTitle || '',
+        enr.username || enr.fullName || enr.email || enr.userId,
+        this.getFormattedDate(enr.enrolledAt),
+        enr.status || ''
+      ]);
+
+      autoTable(pdf, {
+        head: [['ID', 'Khóa học', 'Người dùng', 'Ngày đăng ký', 'Trạng thái']],
+        body: tableData,
+        startY: tableStartY + 7,
+        theme: 'grid',
+        styles: {
+          font: 'DejaVuSans',
+          fontSize: 10,
+          cellPadding: 3,
+          halign: 'left',
+          valign: 'middle',
+        },
+        headStyles: {
+          fillColor: [74, 144, 226],
+          textColor: 255,
+          fontStyle: 'bold',
+          halign: 'center'
+        },
+        columnStyles: {
+          0: { cellWidth: 20, halign: 'center' },
+          1: { cellWidth: 60 },
+          2: { cellWidth: 40 },
+          3: { cellWidth: 30, halign: 'center' },
+          4: { cellWidth: 25, halign: 'center' },
+        },
+        margin: { left: marginLeft, right: marginRight } 
+      });
+
+      // Trang biểu đồ
+      // Footer
+      pdf.setFontSize(10);
+      pdf.setFont('DejaVuSans', 'italic');
+      pdf.text('CMC Learn - Learning Management System', centerX, pdfHeight - 10, { align: 'center' });
+
+      // Lưu file PDF
+      const fileName = `bao-cao-thong-ke-nguoi-tham-gia-${today.toISOString().split('T')[0]}.pdf`;
+      pdf.save(fileName);
+
+    } catch (error: any) {
+      alert(error?.message || 'Lỗi khi xuất PDF, vui lòng thử lại.');
+    } finally {
+      if (exportBtn) {
+        exportBtn.disabled = false;
+        exportBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Xuất PDF';
+      }
     }
   }
+
 }

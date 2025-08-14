@@ -1,0 +1,101 @@
+<div class="payment-history-container">
+  <div class="page-header">
+    <h2 class="page-title">
+      <i class="fas fa-history me-2"></i>
+      Lịch sử thanh toán
+    </h2>
+    <button class="btn btn-primary btn-sm" (click)="loadPaymentHistory()">
+      <i class="fas fa-sync-alt me-2"></i>
+      Làm mới
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Đang tải...</span>
+    </div>
+    <p class="mt-3 text-muted">Đang tải lịch sử thanh toán...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="!isLoading && errorMessage" class="alert alert-danger">
+    <i class="fas fa-exclamation-circle me-2"></i>
+    {{ errorMessage }}
+    <button class="btn btn-sm btn-outline-danger ms-2" (click)="loadPaymentHistory()">
+      Thử lại
+    </button>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!isLoading && !errorMessage && payments.length === 0" class="empty-state">
+    <i class="fas fa-receipt empty-icon"></i>
+    <h4>Chưa có giao dịch nào</h4>
+    <p class="text-muted">Bạn chưa thực hiện thanh toán nào. Hãy đăng ký khóa học để bắt đầu học!</p>
+  </div>
+
+  <!-- Payment List -->
+  <div *ngIf="!isLoading && !errorMessage && payments.length > 0" class="payments-list">
+    <div *ngFor="let payment of payments; trackBy: trackByPaymentId" class="payment-card">
+      <!-- Payment Header -->
+      <div class="payment-header">
+        <div class="payment-course">
+          <h5 class="course-title">{{ payment.courseTitle }}</h5>
+          <span class="transaction-id">{{ payment.transactionId }}</span>
+        </div>
+        <div class="payment-status">
+          <span class="badge" [ngClass]="getStatusClass(payment.status)">
+            {{ getStatusName(payment.status) }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Payment Details -->
+      <div class="payment-details">
+        <div class="detail-row">
+          <span class="detail-label">
+            <i class="fas fa-dollar-sign me-2"></i>
+            Số tiền:
+          </span>
+          <span class="detail-value amount">{{ formatCurrency(payment.amount) }}</span>
+        </div>
+
+        <div class="detail-row">
+          <span class="detail-label">
+            <i class="fas fa-credit-card me-2"></i>
+            Phương thức:
+          </span>
+          <span class="detail-value">{{ getPaymentMethodName(payment.paymentMethod) }}</span>
+        </div>
+
+        <div class="detail-row">
+          <span class="detail-label">
+            <i class="fas fa-calendar me-2"></i>
+            Ngày tạo:
+          </span>
+          <span class="detail-value">{{ formatDate(payment.createdAt) }}</span>
+        </div>
+
+        <div *ngIf="payment.paidAt" class="detail-row">
+          <span class="detail-label">
+            <i class="fas fa-check-circle me-2"></i>
+            Ngày thanh toán:
+          </span>
+          <span class="detail-value">{{ formatDate(payment.paidAt) }}</span>
+        </div>
+      </div>
+
+      <!-- Payment Actions -->
+      <div *ngIf="payment.status === 'pending'" class="payment-actions">
+        <button 
+          class="btn btn-sm btn-success" 
+          (click)="retryCallback(payment)"
+          title="Giả lập thanh toán thành công (chỉ dùng để test)"
+        >
+          <i class="fas fa-check me-2"></i>
+          Giả lập thanh toán thành công
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

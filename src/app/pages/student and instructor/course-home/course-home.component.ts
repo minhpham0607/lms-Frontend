@@ -64,7 +64,6 @@ export class CourseHomeComponent implements OnInit {
     // Get courseId from route params
     this.route.queryParams.subscribe(params => {
       this.courseId = params['courseId'] ? +params['courseId'] : null;
-      console.log('📚 Course ID from route:', this.courseId);
       
       if (this.courseId) {
         this.loadCourseInfo();
@@ -78,7 +77,6 @@ export class CourseHomeComponent implements OnInit {
         }
       } else {
         // Even without courseId, show the page structure
-        console.log('⚠️ No courseId provided');
         this.loading = false;
       }
     });
@@ -118,10 +116,8 @@ export class CourseHomeComponent implements OnInit {
     this.courseService.getCourseById(this.courseId).subscribe({
       next: (course) => {
         this.courseInfo = course;
-        console.log('✅ Course info loaded:', course);
       },
       error: (error) => {
-        console.error('❌ Error loading course info:', error);
         this.showAlert('Không thể tải thông tin khóa học', 'error');
       }
     });
@@ -140,12 +136,9 @@ export class CourseHomeComponent implements OnInit {
         this.instructors = users.filter((user: any) => user.role === 'ROLE_INSTRUCTOR');
         this.students = users.filter((user: any) => user.role === 'ROLE_STUDENT');
         this.filteredUsers = [...this.courseUsers];
-        console.log('✅ Course users loaded:', users.length, 'users');
-        console.log('📊 Instructors:', this.instructors.length, 'Students:', this.students.length);
         this.loading = false;
       },
       error: (error: any) => {
-        console.error('❌ Error loading course users:', error);
         this.showAlert('Không thể tải danh sách người dùng', 'error');
         this.loading = false;
       }
@@ -161,11 +154,9 @@ export class CourseHomeComponent implements OnInit {
       next: (modules: ModuleItem[]) => {
         this.modules = modules.sort((a, b) => a.orderNumber - b.orderNumber);
         this.filteredModules = [...this.modules];
-        console.log('✅ Modules loaded:', this.modules.length, 'modules');
         this.loading = false;
       },
       error: (error) => {
-        console.error('❌ Error loading modules:', error);
         this.showAlert('Không thể tải danh sách module', 'error');
         this.loading = false;
       }
@@ -233,9 +224,6 @@ export class CourseHomeComponent implements OnInit {
   navigateToHome(): void {
     if (this.courseId) {
       this.router.navigate(['/course-home'], { queryParams: { courseId: this.courseId } });
-    } else {
-      // Stay on current page if no courseId
-      console.log('No courseId available for navigation');
     }
   }
 
@@ -251,20 +239,11 @@ export class CourseHomeComponent implements OnInit {
     if (this.courseId) {
       // Debug role checking for grades
       const role = this.sessionService.getUserRole();
-      console.log('🔍 Grades Navigation Debug:', {
-        role: role,
-        isStudent: this.isStudent(),
-        isInstructor: this.isInstructor(),
-        isAdmin: this.isAdmin(),
-        courseId: this.courseId
-      });
       
       // Students go to student-grades, instructors/admins go to grades management
       if (this.isStudent()) {
-        console.log('👨‍🎓 Navigating to student-grades for student');
         this.router.navigate(['/student-grades'], { queryParams: { courseId: this.courseId } });
       } else {
-        console.log('👨‍🏫 Navigating to grades management for instructor/admin');
         this.router.navigate(['/grades'], { queryParams: { courseId: this.courseId } });
       }
     } else {
@@ -284,21 +263,13 @@ export class CourseHomeComponent implements OnInit {
     if (this.courseId) {
       // Debug role checking
       const role = this.sessionService.getUserRole();
-      console.log('🔍 Navigation Debug:', {
-        role: role,
-        isInstructor: this.isInstructor(),
-        isAdmin: this.isAdmin(),
-        courseId: this.courseId
-      });
       
       // Check if user is instructor/admin
       if (this.isInstructor() || this.isAdmin()) {
         // Navigate to video upload page for instructors
-        console.log('👨‍🏫 Navigating to video-upload for instructor/admin');
         this.router.navigate(['/video-upload'], { queryParams: { courseId: this.courseId } });
       } else {
         // Navigate to learn online page for students
-        console.log('👨‍🎓 Navigating to learn-online for student');
         this.router.navigate(['/learn-online'], { queryParams: { courseId: this.courseId } });
       }
     } else {
@@ -367,7 +338,6 @@ export class CourseHomeComponent implements OnInit {
           this.showAlert('Đã xóa người dùng khỏi khóa học thành công!', 'success');
         },
         error: (error) => {
-          console.error('Error removing user from course:', error);
           this.showAlert('Có lỗi xảy ra khi xóa người dùng khỏi khóa học!', 'error');
         }
       });

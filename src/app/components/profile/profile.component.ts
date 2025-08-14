@@ -1,5 +1,5 @@
 import { Component, Input, Output, EventEmitter, OnInit, Inject, PLATFORM_ID, HostListener, ElementRef } from '@angular/core';
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { isPlatformBrowser, CommonModule } from '@angular/common';
 import { ProfileUpdateComponent } from '../profile-update/profile-update.component';
 import { AvatarService } from '../../services/avatar.service';
 import { UserService } from '../../services/user.service';
@@ -38,7 +38,6 @@ export class ProfileComponent implements OnInit {
     const sessionAvatar = this.sessionService.getAvatarUrl();
     if (sessionAvatar && sessionAvatar !== 'assets/pictures/logocmc.png') {
       this.avatarUrl = sessionAvatar;
-      console.log('✅ Using cached avatar from session:', this.avatarUrl);
     }
 
     // Load user data từ API
@@ -68,14 +67,11 @@ export class ProfileComponent implements OnInit {
       if (token) {
         this.userService.getCurrentUser().subscribe({
           next: (user) => {
-            console.log('👤 User data from API:', user);
             this.username = user.fullName || user.username || this.username;
             this.role = user.role || this.role;
 
             if (user.avatarUrl) {
-              console.log('🖼️ Raw avatar URL from database:', user.avatarUrl);
               const avatarUrl = this.avatarService.getValidAvatarUrl(user.avatarUrl);
-              console.log('🖼️ Final avatar URL:', avatarUrl);
               
               // Chỉ cập nhật nếu khác default
               if (avatarUrl !== this.avatarService.getDefaultAvatarUrl()) {
@@ -83,7 +79,6 @@ export class ProfileComponent implements OnInit {
                 this.sessionService.setAvatarUrl(this.avatarUrl);
               }
             } else {
-              console.log('❌ No avatar URL in database');
               // Nếu chưa có avatar nào, dùng default
               if (!this.avatarUrl || this.avatarUrl === this.avatarService.getDefaultAvatarUrl()) {
                 this.avatarUrl = this.avatarService.getDefaultAvatarUrl();
@@ -92,7 +87,6 @@ export class ProfileComponent implements OnInit {
             }
           },
           error: (err) => {
-            console.error('❌ Failed to load user from API:', err);
             this.loadUserFromToken();
           }
         });
@@ -109,27 +103,19 @@ export class ProfileComponent implements OnInit {
       if (token) {
         try {
           const payload = JSON.parse(atob(token.split('.')[1]));
-          console.log('🔐 Token payload:', payload);
-          console.log('🖼️ Avatar URL in token:', payload.avatarUrl);
-          console.log('🔍 All token fields:', Object.keys(payload));
           this.username = payload.fullName || payload.sub || this.username;
           this.role = payload.role || this.role;
 
           if (payload.avatarUrl) {
-            console.log('🖼️ Avatar URL from token:', payload.avatarUrl);
             const avatarUrl = this.avatarService.getValidAvatarUrl(payload.avatarUrl);
-            console.log('🖼️ Final avatar URL from token:', avatarUrl);
             
             // Chỉ cập nhật nếu khác default
             if (avatarUrl !== this.avatarService.getDefaultAvatarUrl()) {
               this.avatarUrl = avatarUrl;
               this.sessionService.setAvatarUrl(this.avatarUrl);
             }
-          } else {
-            console.log('❌ No avatar URL in token');
           }
         } catch (error) {
-          console.error('❌ Token decode error:', error);
           this.avatarUrl = this.avatarService.getDefaultAvatarUrl();
           this.sessionService.setAvatarUrl(this.avatarUrl);
         }
@@ -151,17 +137,14 @@ export class ProfileComponent implements OnInit {
             const avatarUrl = this.avatarService.getValidAvatarUrl(user.avatarUrl) + '?v=' + Date.now();
             this.avatarUrl = avatarUrl;
             this.sessionService.setAvatarUrl(this.avatarUrl);
-            console.log('✅ Avatar loaded from profile API:', avatarUrl);
           } else {
             this.avatarUrl = this.avatarService.getDefaultAvatarUrl();
             this.sessionService.setAvatarUrl(this.avatarUrl);
-            console.log('❌ No avatar in profile API, using default');
           }
         })
         .catch(err => {
           this.avatarUrl = this.avatarService.getDefaultAvatarUrl();
           this.sessionService.setAvatarUrl(this.avatarUrl);
-          console.error('❌ Error fetching avatar from profile API:', err);
         });
     }
   }
@@ -204,9 +187,7 @@ export class ProfileComponent implements OnInit {
     this.showProfileUpdateModal = false;
 
     if (updatedUser?.avatarUrl) {
-      console.log('🔄 Profile updated with new avatar:', updatedUser.avatarUrl);
       const avatarUrl = this.avatarService.getValidAvatarUrl(updatedUser.avatarUrl);
-      console.log('🔄 Processed new avatar URL:', avatarUrl);
       this.avatarUrl = avatarUrl;
       this.sessionService.setAvatarUrl(this.avatarUrl);
     }
@@ -235,6 +216,6 @@ export class ProfileComponent implements OnInit {
   }
 
   onAvatarError(event: any) {
-    console.log('❌ Avatar failed to load, using default');
     event.target.src = this.avatarService.getDefaultAvatarUrl();
-  }}
+  }
+}

@@ -453,3 +453,179 @@
     justify-content: center;
   }
 }
+
+/* Payment-related styles */
+.price-highlight {
+  font-weight: bold;
+  color: #007bff;
+  font-size: 1.1em;
+}
+
+.free-tag {
+  background: #28a745;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.8em;
+  font-weight: bold;
+}
+
+.course-actions {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+}
+
+.btn-outline-info {
+  background: transparent;
+  color: #17a2b8;
+  border: 2px solid #17a2b8;
+  
+  &:hover {
+    background: #17a2b8;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(23, 162, 184, 0.3);
+  }
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #28a745, #1e7e34);
+  color: white;
+  border: 2px solid transparent;
+  
+  &:hover {
+    background: linear-gradient(135deg, #1e7e34, #155724);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+  }
+}
+
+.btn-payment {
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  color: white;
+  border: 2px solid transparent;
+  
+  &:hover {
+    background: linear-gradient(135deg, #0056b3, #004085);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+  }
+}
+
+.btn-free {
+  background: linear-gradient(135deg, #28a745, #1e7e34);
+  color: white;
+  border: 2px solid transparent;
+  
+  &:hover {
+    background: linear-gradient(135deg, #1e7e34, #155724);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+  }
+}
+
+/* Enhanced enrollment status */
+.enrollment-status {
+  &.not-enrolled {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    
+    span {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+  }
+}
+
+/* Course card hover effects for payment */
+.course-card.not-enrolled:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  border-color: #007bff;
+}
+
+.course-card.not-enrolled .course-actions .btn {
+  opacity: 0.8;
+}
+
+.course-card.not-enrolled:hover .course-actions .btn {
+  opacity: 1;
+}
+
+/* Rating stars styling */
+.rating-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stars {
+  display: flex;
+  gap: 2px;
+  
+  i {
+    font-size: 0.9rem;
+  }
+}
+
+.rating-text {
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: 600;
+}
+
+.text-warning {
+  color: #ffc107 !important;
+}
+
+.text-muted {
+  color: #6c757d !important;
+}
+
+/* Responsive action buttons */
+@media (max-width: 768px) {
+  .action-buttons {
+    flex-direction: column;
+    width: 100%;
+    gap: 0.3rem;
+  }
+  
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .course-actions {
+    justify-content: stretch;
+  }
+}

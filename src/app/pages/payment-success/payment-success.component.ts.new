@@ -1,0 +1,306 @@
+import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
+import { CommonModule } from '@angular/common';
+import { PaymentService } from '../../services/payment.service';
+
+@Component({
+  selector: 'app-payment-success',
+  standalone: true,
+  imports: [CommonModule],
+  template: `
+    <div class="payment-result-container">
+      <div class="card" [ngClass]="{'success': isSuccess, 'error': !isSuccess}">
+        <div class="icon">
+          <i [class]="isSuccess ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
+        </div>
+        
+        <h2>{{ isSuccess ? 'Thanh toán thành công!' : 'Thanh toán thất bại!' }}</h2>
+        
+        <div class="details" *ngIf="paymentDetails">
+          <p><strong>Mã giao dịch:</strong> {{ paymentDetails.transactionId }}</p>
+          <p><strong>Số tiền:</strong> {{ paymentDetails.amount | currency:'VND' }}</p>
+          <p><strong>Thời gian:</strong> {{ paymentDetails.timestamp | date:'dd/MM/yyyy HH:mm:ss' }}</p>
+          <p *ngIf="paymentDetails.responseCode"><strong>Mã phản hồi:</strong> {{ paymentDetails.responseCode }}</p>
+        </div>
+
+        <div class="message">
+          <p>{{ message }}</p>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-primary" (click)="goToCourses()">
+            {{ isSuccess ? 'Xem khóa học' : 'Quay lại' }}
+          </button>
+          <button class="btn btn-secondary" (click)="goToHome()">Trang chủ</button>
+        </div>
+      </div>
+    </div>
+  `,
+  styles: [`
+    .payment-result-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 15px;
+      padding: 2rem;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      text-align: center;
+      max-width: 500px;
+      width: 100%;
+      animation: fadeInUp 0.6s ease-out;
+    }
+
+    .card.success {
+      border-top: 5px solid #28a745;
+    }
+
+    .card.error {
+      border-top: 5px solid #dc3545;
+    }
+
+    .icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+    }
+
+    .success .icon {
+      color: #28a745;
+    }
+
+    .error .icon {
+      color: #dc3545;
+    }
+
+    h2 {
+      margin-bottom: 1.5rem;
+      color: #333;
+    }
+
+    .details {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 1.5rem 0;
+      text-align: left;
+    }
+
+    .details p {
+      margin: 0.5rem 0;
+      color: #555;
+    }
+
+    .message {
+      margin: 1.5rem 0;
+      color: #666;
+    }
+
+    .actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 2rem;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      font-weight: 500;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 1rem;
+    }
+
+    .btn-primary {
+      background: #007bff;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #0056b3;
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      background: #6c757d;
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background: #545b62;
+      transform: translateY(-2px);
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 576px) {
+      .card {
+        padding: 1.5rem;
+      }
+      
+      .actions {
+        flex-direction: column;
+      }
+      
+      .btn {
+        width: 100%;
+      }
+    }
+  `]
+})
+export class PaymentSuccessComponent implements OnInit {
+  isSuccess: boolean = false;
+  message: string = '';
+  paymentDetails: any = null;
+
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
+    private http: HttpClient,
+    private paymentService: PaymentService
+  ) {}
+
+  ngOnInit() {
+    this.route.queryParams.subscribe(params => {
+      // Lấy transaction_id từ params
+      const transactionId = params['transaction_id'];
+      
+      if (params['vnp_ResponseCode']) {
+        // Xử lý callback từ VNPay
+        this.handleVNPayCallback(params);
+      } else if (transactionId) {
+        // Xử lý callback từ ZaloPay hoặc kiểm tra trạng thái thanh toán
+        this.checkPaymentStatus(transactionId);
+      } else {
+        // Không có params, có thể redirect từ trang khác
+        this.message = 'Không tìm thấy thông tin thanh toán.';
+      }
+    });
+  }
+
+  handleVNPayCallback(params: any) {
+    const responseCode = params['vnp_ResponseCode'];
+    const transactionId = params['vnp_TxnRef'];
+    const amount = params['vnp_Amount'] ? parseInt(params['vnp_Amount']) / 100 : 0;
+
+    this.paymentDetails = {
+      transactionId: transactionId,
+      amount: amount,
+      timestamp: new Date(),
+      responseCode: responseCode
+    };
+
+    if (responseCode === '00') {
+      this.isSuccess = true;
+      this.message = 'Thanh toán VNPay thành công! Bạn đã được đăng ký khóa học.';
+      
+      // Gọi API để xác nhận thanh toán
+      this.confirmVNPayPayment();
+    } else {
+      this.isSuccess = false;
+      this.message = this.getVNPayErrorMessage(responseCode);
+    }
+  }
+
+  confirmVNPayPayment() {
+    const queryString = window.location.search;
+    
+    this.paymentService.confirmVNPayPayment(queryString).subscribe({
+      next: (response: any) => {
+        if (response.success) {
+          this.message = response.message || 'Thanh toán thành công và đã đăng ký khóa học!';
+        } else {
+          this.message = 'Thanh toán thành công nhưng có lỗi khi xác nhận. Vui lòng liên hệ hỗ trợ.';
+        }
+      },
+      error: (error) => {
+        console.error('Error confirming payment:', error);
+        this.message = 'Thanh toán thành công nhưng có lỗi khi xác nhận. Vui lòng liên hệ hỗ trợ.';
+      }
+    });
+  }
+
+  checkPaymentStatus(transactionId: string) {
+    this.paymentService.checkPaymentByTransaction(transactionId).subscribe({
+      next: (response: any) => {
+        if (response.found && response.payment) {
+          const payment = response.payment;
+          this.paymentDetails = {
+            transactionId: payment.transactionId,
+            amount: payment.amount,
+            timestamp: new Date(payment.createdAt || payment.paidAt)
+          };
+          
+          if (payment.status === 'completed') {
+            this.isSuccess = true;
+            this.message = 'Thanh toán đã được xác nhận thành công!';
+          } else if (payment.status === 'pending') {
+            this.isSuccess = false;
+            this.message = 'Thanh toán đang được xử lý. Vui lòng đợi trong giây lát.';
+          } else {
+            this.isSuccess = false;
+            this.message = 'Thanh toán thất bại hoặc bị hủy.';
+          }
+        } else {
+          this.isSuccess = false;
+          this.message = 'Không tìm thấy thông tin giao dịch.';
+        }
+      },
+      error: (error) => {
+        console.error('Error checking payment status:', error);
+        this.isSuccess = false;
+        this.message = 'Có lỗi khi kiểm tra trạng thái thanh toán.';
+      }
+    });
+  }
+
+  getVNPayErrorMessage(responseCode: string): string {
+    const errorMessages: { [key: string]: string } = {
+      '01': 'Giao dịch chưa hoàn tất',
+      '02': 'Giao dịch bị lỗi',
+      '04': 'Giao dịch đảo (Khách hàng đã bị trừ tiền tại Ngân hàng nhưng GD chưa thành công ở VNPAY)',
+      '05': 'VNPAY đang xử lý giao dịch này (GD hoàn tiền)',
+      '06': 'VNPAY đã gửi yêu cầu hoàn tiền sang Ngân hàng (GD hoàn tiền)',
+      '07': 'Giao dịch bị nghi ngờ gian lận',
+      '09': 'GD Hoàn trả bị từ chối',
+      '10': 'Đã giao hàng',
+      '11': 'Giao dịch không thành công do số dư không đủ',
+      '12': 'Giao dịch không thành công do thẻ/tài khoản của khách hàng bị khóa',
+      '13': 'Giao dịch không thành công do Quý khách nhập sai mật khẩu xác thực giao dịch (OTP)',
+      '24': 'Giao dịch không thành công do: GD Hủy',
+      '51': 'Giao dịch không thành công do: Tài khoản của quý khách không đủ số dư để thực hiện giao dịch',
+      '65': 'Giao dịch không thành công do: Tài khoản của Quý khách đã vượt quá hạn mức giao dịch trong ngày',
+      '75': 'Ngân hàng thanh toán đang bảo trì',
+      '79': 'Giao dịch không thành công do: KH nhập sai mật khẩu thanh toán quá số lần quy định'
+    };
+
+    return errorMessages[responseCode] || `Giao dịch thất bại với mã lỗi: ${responseCode}`;
+  }
+
+  goToCourses() {
+    this.router.navigate(['/course-home']);
+  }
+
+  goToHome() {
+    this.router.navigate(['/']);
+  }
+}

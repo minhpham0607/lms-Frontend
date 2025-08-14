@@ -151,7 +151,6 @@ export class DiscussionComponent implements OnInit {
     // Initialize with empty string as first history entry
     this.textHistory = [''];
     this.currentHistoryIndex = 0;
-    console.log('🏁 History initialized with empty entry');
   }
 
   // Helper method để hiển thị thông báo
@@ -181,7 +180,6 @@ export class DiscussionComponent implements OnInit {
         this.loading = false;
       },
       error: (error) => {
-        console.error('Error loading discussions:', error);
         this.showAlert('Không thể tải danh sách thảo luận', 'error');
         this.loading = false;
       }
@@ -201,11 +199,8 @@ export class DiscussionComponent implements OnInit {
   loadCourseInstructor(): void {
     if (!this.courseId) return;
 
-    console.log('🔍 Loading course instructor for courseId:', this.courseId);
     this.discussionService.getCourseInstructor(this.courseId).subscribe({
       next: (response) => {
-        console.log('📝 Course instructor response:', response);
-
         // First try: instructor object is populated (from JOINed query)
         if (response && response.instructor && response.instructor.userId) {
           this.courseInstructor = {
@@ -213,7 +208,6 @@ export class DiscussionComponent implements OnInit {
             fullName: response.instructor.fullName || response.instructor.username || 'Giảng viên',
             role: 'instructor'
           };
-          console.log('👨‍🏫 Course instructor (from instructor object):', this.courseInstructor);
         }
         // Second try: instructorId exists but instructor object is null
         else if (response && response.instructorId && response.instructorId > 0) {
@@ -224,15 +218,11 @@ export class DiscussionComponent implements OnInit {
             fullName: instructorName,
             role: 'instructor'
           };
-          console.log('👨‍🏫 Course instructor (from instructorId + instructorName):', this.courseInstructor);
         }
         // Third try: Course object exists but instructorId is null - try to load from course members if instructor
         else if (response && response.courseId && !response.instructorId) {
-          console.warn('⚠️ Course exists but no instructor assigned:', response);
-
           // If current user is instructor, maybe they are the instructor but data is not set properly
           if (this.isInstructor) {
-            console.log('🔧 Current user is instructor, trying to use their info as course instructor');
             this.courseInstructor = {
               id: this.sessionService.getUserId(),
               fullName: this.sessionService.getFullName() || 'Giảng viên',
@@ -246,21 +236,17 @@ export class DiscussionComponent implements OnInit {
         }
         // Fourth try: Handle the specific case where all instructor fields are null
         else if (response && response.instructorId === null && response.title) {
-          console.warn('⚠️ Course found but instructor information is null. Trying alternative approach...', response);
-
           // For now, show warning and allow students to create public discussions only
           this.courseInstructor = null;
           this.showAlert('Khóa học này chưa có giảng viên được phân công. Bạn chỉ có thể tạo thảo luận công khai.', 'warning');
         }
         // Last resort: No valid course data
         else {
-          console.warn('⚠️ Invalid or empty course response:', response);
           this.courseInstructor = null;
           this.showAlert('Không thể tải thông tin khóa học', 'error');
         }
       },
       error: (error) => {
-        console.error('❌ Error loading course instructor:', error);
         this.courseInstructor = null;
         if (error.status === 404) {
           this.showAlert('Không tìm thấy khóa học', 'error');
@@ -279,15 +265,12 @@ export class DiscussionComponent implements OnInit {
 
     // Check if user is instructor - only instructors can load course members
     if (!this.isInstructor) {
-      console.log('🔒 Only instructors can access course members list');
       this.courseMembers = [];
       return;
     }
 
-    console.log('🔍 Loading course members for courseId:', this.courseId);
     this.discussionService.getCourseMembers(this.courseId).subscribe({
       next: (response) => {
-        console.log('📝 Course members response:', response);
 
         // Response là List<UserDTO> trực tiếp từ backend
         if (Array.isArray(response)) {
@@ -303,21 +286,16 @@ export class DiscussionComponent implements OnInit {
               array.findIndex(m => m.userId === member.userId) === index
             );
 
-          console.log('👥 Filtered course members:', this.courseMembers);
-          console.log('🔍 UserIds:', this.courseMembers.map(m => m.userId));
-
           if (this.courseMembers.length > 0) {
             this.showAlert('Đã tải danh sách thành viên khóa học', 'success');
           } else {
             this.showAlert('Không có thành viên khác trong khóa học', 'warning');
           }
         } else {
-          console.warn('⚠️ Unexpected response format:', response);
           this.showAlert('Định dạng dữ liệu không đúng', 'error');
         }
       },
       error: (error) => {
-        console.error('❌ Error loading course members:', error);
         if (error.status === 403) {
           this.showAlert('Bạn không có quyền xem danh sách thành viên khóa học này', 'error');
         } else if (error.status === 404) {
@@ -332,7 +310,6 @@ export class DiscussionComponent implements OnInit {
 
   // Reload course members manually
   reloadCourseMembers(): void {
-    console.log('🔄 Manually reloading course members...');
     this.courseMembers = []; // Clear current list
     this.loadCourseMembers();
   }
@@ -390,21 +367,14 @@ export class DiscussionComponent implements OnInit {
   loadDiscussionReplies(): void {
     if (!this.selectedDiscussion?.discussionId) return;
 
-    console.log('🔄 Loading replies for discussion:', this.selectedDiscussion.discussionId);
-
     this.loadingReplies = true;
     // Load all replies (both root and nested) and handle structure in frontend
     this.discussionReplyService.getRepliesByDiscussion(this.selectedDiscussion.discussionId).subscribe({
       next: (replies) => {
-        console.log('📨 Replies response:', replies);
         this.discussionReplies = replies;
-        console.log('✅ Loaded replies:', this.discussionReplies.length);
-        console.log('📊 Root replies:', this.getRootReplies().length);
-        console.log('📊 Nested replies:', replies.filter(r => r.parentReplyId).length);
         this.loadingReplies = false;
       },
       error: (error) => {
-        console.error('❌ Error loading replies:', error);
         this.showAlert('Không thể tải danh sách trả lời', 'error');
         this.discussionReplies = [];
         this.loadingReplies = false;
@@ -426,7 +396,6 @@ export class DiscussionComponent implements OnInit {
         this.newDiscussion.attachmentName = uploadResponse.fileName;
         this.submitDiscussion();
       }).catch((error) => {
-        console.error('❌ File upload failed:', error);
         this.showAlert('Lỗi khi upload file: ' + (error.error?.message || error.message), 'error');
         this.submitting = false;
       });
@@ -460,7 +429,6 @@ export class DiscussionComponent implements OnInit {
         this.submitting = false;
       },
       error: (error) => {
-        console.error('Error creating discussion:', error);
         this.showAlert('Lỗi khi tạo thảo luận', 'error');
         this.submitting = false;
       }
@@ -490,7 +458,6 @@ export class DiscussionComponent implements OnInit {
         }
       },
       error: (error) => {
-        console.error('Error deleting discussion:', error);
         this.showAlert('Lỗi khi xóa thảo luận', 'error');
       }
     });
@@ -509,7 +476,6 @@ export class DiscussionComponent implements OnInit {
         }
       },
       error: (error) => {
-        console.error('Error deleting reply:', error);
         this.showAlert('Lỗi khi xóa trả lời', 'error');
       }
     });
@@ -562,19 +528,12 @@ export class DiscussionComponent implements OnInit {
 
   // Toggle student selection for instructors
   toggleStudentSelection(studentId: number): void {
-    console.log('🔄 Toggling selection for student:', studentId);
-    console.log('📝 Current selected IDs before:', [...this.selectedStudentIds]);
-
     const index = this.selectedStudentIds.indexOf(studentId);
     if (index > -1) {
       this.selectedStudentIds.splice(index, 1);
-      console.log('❌ Removed student', studentId, 'from selection');
     } else {
       this.selectedStudentIds.push(studentId);
-      console.log('✅ Added student', studentId, 'to selection');
     }
-
-    console.log('📝 Current selected IDs after:', [...this.selectedStudentIds]);
   }
 
   // Check if student is selected
@@ -669,7 +628,6 @@ export class DiscussionComponent implements OnInit {
 
     this.discussionService.markDiscussionAsRead(this.selectedDiscussion.discussionId).subscribe({
       next: (response) => {
-        console.log('📖 Discussion marked as read');
         // Update read status in UI
         if (this.selectedDiscussion) {
           this.selectedDiscussion.isRead = true;
@@ -682,7 +640,6 @@ export class DiscussionComponent implements OnInit {
         }
       },
       error: (error) => {
-        console.error('Error marking discussion as read:', error);
       }
     });
   }
@@ -703,25 +660,19 @@ export class DiscussionComponent implements OnInit {
 
   // Format text methods for rich textarea
   formatText(command: string, target?: string) {
-    console.log('🎯 Format command received:', command, 'target:', target);
-
     // Get the active textarea
     let textarea: HTMLTextAreaElement | null = null;
     if (target === 'reply') {
       textarea = document.querySelector('textarea[name="replyContent"]') as HTMLTextAreaElement;
-      console.log('🔍 Looking for reply textarea:', textarea);
     } else if (target && target.startsWith('nested-')) {
       // For nested replies, target format is 'nested-{replyId}'
       const replyId = target.replace('nested-', '');
       textarea = document.querySelector(`textarea[name="nestedReply${replyId}"]`) as HTMLTextAreaElement;
-      console.log('🔍 Looking for nested textarea:', textarea, 'with selector:', `textarea[name="nestedReply${replyId}"]`);
     } else {
       textarea = document.querySelector('textarea[name="discussionContent"]') as HTMLTextAreaElement;
-      console.log('🔍 Looking for discussion textarea:', textarea);
     }
 
     if (!textarea) {
-      console.error('❌ Textarea not found for target:', target);
       this.showAlert('Không tìm thấy ô nhập liệu', 'error');
       return;
     }
@@ -731,8 +682,6 @@ export class DiscussionComponent implements OnInit {
     const selectedText = textarea.value.substring(start, end);
     const beforeText = textarea.value.substring(0, start);
     const afterText = textarea.value.substring(end);
-
-    console.log('📝 Text processing:', { start, end, selectedText, currentLength: textarea.value.length });
 
     let newText = '';
     let newCursorPos = start;
@@ -790,18 +739,15 @@ export class DiscussionComponent implements OnInit {
 
       case 'link':
         // Use modal instead of inline prompt
-        console.log('🔗 Opening link modal for target:', target);
         this.openLinkModal(target || 'create', textarea);
         return;
 
       default:
-        console.warn('⚠️ Unknown format command:', command);
         return;
     }
 
     // Update textarea value
     const fullText = beforeText + newText + afterText;
-    console.log('📝 Updating content from', textarea.value.length, 'to', fullText.length, 'chars');
 
     if (target === 'reply') {
       this.replyContent = fullText;
@@ -816,7 +762,6 @@ export class DiscussionComponent implements OnInit {
     setTimeout(() => {
       textarea.focus();
       textarea.setSelectionRange(newCursorPos, newCursorPos);
-      console.log('✅ Cursor positioned at:', newCursorPos);
     }, 10);
   }
 
@@ -838,8 +783,6 @@ export class DiscussionComponent implements OnInit {
 
   // Open link modal for different targets
   openLinkModal(target: string, textarea?: HTMLTextAreaElement) {
-    console.log('🔗 Opening link modal for target:', target);
-
     let targetTextarea: HTMLTextAreaElement | null = null;
     let selectedText = '';
     let start = 0;
@@ -850,11 +793,9 @@ export class DiscussionComponent implements OnInit {
       start = textarea.selectionStart;
       end = textarea.selectionEnd;
       selectedText = textarea.value.substring(start, end);
-      console.log('✅ Using provided textarea');
     } else {
       // Special handling for reply form - ensure it's shown first
       if (target === 'reply' && !this.showMainReplyForm) {
-        console.log('🔄 Reply form not shown, opening it first...');
         this.showMainReplyForm = true;
         // Wait for the form to render before trying to find the textarea
         setTimeout(() => {
@@ -877,10 +818,7 @@ export class DiscussionComponent implements OnInit {
         start = targetTextarea.selectionStart;
         end = targetTextarea.selectionEnd;
         selectedText = targetTextarea.value.substring(start, end);
-        console.log('✅ Found textarea for target:', target);
       } else {
-        console.error('❌ Could not find textarea for target:', target);
-        console.log('🔍 Available textareas:', Array.from(document.querySelectorAll('textarea')).map(ta => (ta as HTMLTextAreaElement).name));
         this.showAlert('Không tìm thấy ô nhập liệu. Vui lòng thử lại sau khi mở form.', 'error');
         return;
       }
@@ -903,7 +841,6 @@ export class DiscussionComponent implements OnInit {
 
     // Show the modal
     this.showLinkModal = true;
-    console.log('✅ Link modal opened');
   }
 
   // Close link modal
@@ -989,7 +926,6 @@ export class DiscussionComponent implements OnInit {
         this.textHistory.shift();
       }
       this.currentHistoryIndex = this.textHistory.length - 1;
-      console.log('📝 Saved to history:', text.substring(0, 30) + (text.length > 30 ? '...' : ''), 'Total:', this.textHistory.length, 'Index:', this.currentHistoryIndex);
     }
   }
 
@@ -1011,8 +947,6 @@ export class DiscussionComponent implements OnInit {
           this.replyContent = historyText;
         }
       }
-
-      console.log('⬅️ Navigate back to:', historyText.substring(0, 50) + '...', 'Index:', this.currentHistoryIndex, 'Target:', target);
     }
   }
 
@@ -1034,8 +968,6 @@ export class DiscussionComponent implements OnInit {
           this.replyContent = historyText;
         }
       }
-
-      console.log('➡️ Navigate forward to:', historyText.substring(0, 50) + '...', 'Index:', this.currentHistoryIndex, 'Target:', target);
     }
   }
 
@@ -1131,7 +1063,6 @@ export class DiscussionComponent implements OnInit {
         replyDto.attachmentName = uploadResponse.fileName;
         this.createReplyRequest(replyDto);
       }).catch((error) => {
-        console.error('❌ Reply file upload failed:', error);
         this.showAlert('Lỗi khi upload file: ' + (error.error?.message || error.message), 'error');
         this.isLoading = false;
       });
@@ -1151,7 +1082,6 @@ export class DiscussionComponent implements OnInit {
         this.isLoading = false;
       },
       error: (error) => {
-        console.error('Error replying to discussion:', error);
         this.showAlert('Lỗi khi trả lời', 'error');
         this.isLoading = false;
       }
@@ -1192,7 +1122,6 @@ export class DiscussionComponent implements OnInit {
       if (!this.nestedTextHistory[replyId]) {
         this.nestedTextHistory[replyId] = [''];
         this.nestedCurrentHistoryIndex[replyId] = 0;
-        console.log('🏁 Nested history initialized for reply', replyId);
       }
     }
   }
@@ -1221,7 +1150,6 @@ export class DiscussionComponent implements OnInit {
       if (hasFile) {
         const uploadResult = await this.uploadReplyFile(hasFile);
         fileUrl = uploadResult.url || uploadResult.filePath || '';
-        console.log('📎 Nested reply file uploaded:', fileUrl);
       }
 
       const nestedReplyDto: DiscussionReply = {
@@ -1249,13 +1177,11 @@ export class DiscussionComponent implements OnInit {
           this.isLoading = false;
         },
         error: (error) => {
-          console.error('Error creating nested reply:', error);
           this.showAlert('Lỗi khi trả lời', 'error');
           this.isLoading = false;
         }
       });
     } catch (error) {
-      console.error('Error uploading nested file:', error);
       this.showAlert('Lỗi khi tải file lên', 'error');
       this.isLoading = false;
     }
@@ -1273,7 +1199,6 @@ export class DiscussionComponent implements OnInit {
 
   // Show main reply form
   showReplyForm() {
-    console.log('📝 Showing reply form');
     this.showMainReplyForm = true;
 
     // Wait a bit for the form to render, then focus on textarea
@@ -1281,9 +1206,6 @@ export class DiscussionComponent implements OnInit {
       const textarea = document.querySelector('textarea[name="replyContent"]') as HTMLTextAreaElement;
       if (textarea) {
         textarea.focus();
-        console.log('✅ Reply form shown and textarea focused');
-      } else {
-        console.error('❌ Reply textarea not found after showing form');
       }
     }, 100);
   }
@@ -1420,7 +1342,6 @@ export class DiscussionComponent implements OnInit {
       }
 
       this.selectedFile = file;
-      console.log('📎 File selected:', file.name, 'Size:', this.formatFileSize(file.size));
     }
   }
 
@@ -1454,12 +1375,10 @@ export class DiscussionComponent implements OnInit {
       // Use the HTTP client to upload file
       this.discussionService.uploadFile(formData).subscribe({
         next: (response) => {
-          console.log('✅ File uploaded successfully:', response);
           this.isUploading = false;
           resolve(response);
         },
         error: (error) => {
-          console.error('❌ Error uploading file:', error);
           this.isUploading = false;
           reject(error);
         }
@@ -1495,7 +1414,6 @@ export class DiscussionComponent implements OnInit {
       }
 
       this.selectedReplyFile = file;
-      console.log('📎 Reply file selected:', file.name, 'Size:', this.formatFileSize(file.size));
     }
   }
 
@@ -1521,12 +1439,10 @@ export class DiscussionComponent implements OnInit {
       // Use the discussion reply service to upload file
       this.discussionReplyService.uploadFile(formData).subscribe({
         next: (response) => {
-          console.log('✅ Reply file uploaded successfully:', response);
           this.isUploading = false;
           resolve(response);
         },
         error: (error) => {
-          console.error('❌ Error uploading reply file:', error);
           this.isUploading = false;
           reject(error);
         }
@@ -1585,7 +1501,6 @@ export class DiscussionComponent implements OnInit {
       }
 
       this.nestedSelectedFiles[replyId] = file;
-      console.log('📎 Nested reply file selected:', file.name, 'Size:', this.formatFileSize(file.size));
     }
   }
 
@@ -1671,8 +1586,6 @@ export class DiscussionComponent implements OnInit {
       history.shift();
       this.nestedCurrentHistoryIndex[replyId]--;
     }
-
-    console.log('📝 Nested history saved for reply', replyId, ':', text.substring(0, 30) + (text.length > 30 ? '...' : ''), 'Total:', history.length, 'Index:', this.nestedCurrentHistoryIndex[replyId]);
   }
 
   // Navigate nested history back
@@ -1735,21 +1648,13 @@ export class DiscussionComponent implements OnInit {
     if (this.courseId) {
       // Debug role checking for grades
       const role = this.sessionService.getUserRole();
-      console.log('🔍 Discussion->Grades Navigation Debug:', {
-        role: role,
-        isInstructor: this.isInstructor,
-        isAdmin: this.sessionService.isAdmin(),
-        courseId: this.courseId
-      });
       
       // Check if user is instructor/admin
       if (this.isInstructor || this.sessionService.isAdmin()) {
         // Navigate to instructor grades management page
-        console.log('👨‍🏫 Navigating to grades management for instructor/admin');
         this.router.navigate(['/grades'], { queryParams: { courseId: this.courseId } });
       } else {
         // Navigate to student grades view page
-        console.log('👨‍🎓 Navigating to student-grades for student');
         this.router.navigate(['/student-grades'], { queryParams: { courseId: this.courseId } });
       }
     }
@@ -1765,21 +1670,13 @@ export class DiscussionComponent implements OnInit {
     if (this.courseId) {
       // Debug role checking for video
       const role = this.sessionService.getUserRole();
-      console.log('🔍 Discussion->Video Navigation Debug:', {
-        role: role,
-        isInstructor: this.isInstructor,
-        isAdmin: this.sessionService.isAdmin(),
-        courseId: this.courseId
-      });
       
       // Check if user is instructor/admin
       if (this.isInstructor || this.sessionService.isAdmin()) {
         // Navigate to video upload page for instructors
-        console.log('👨‍🏫 Navigating to video-upload for instructor/admin');
         this.router.navigate(['/video-upload'], { queryParams: { courseId: this.courseId } });
       } else {
         // Navigate to learn online page for students
-        console.log('👨‍🎓 Navigating to learn-online for student');
         this.router.navigate(['/learn-online'], { queryParams: { courseId: this.courseId } });
       }
     }
@@ -1798,10 +1695,9 @@ export class DiscussionComponent implements OnInit {
     this.courseService.getCourseById(this.courseId).subscribe({
       next: (course) => {
         this.courseInfo = course;
-        console.log('✅ Course info loaded:', course);
       },
       error: (error) => {
-        console.error('❌ Error loading course info:', error);
+        // Error handling without debug output
       }
     });
   }

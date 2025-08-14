@@ -45,7 +45,6 @@ export class ExamResultComponent implements OnInit {
         this.isLoading = false;
       },
       error: (error) => {
-        console.error('Error loading result:', error);
         alert('Lỗi khi tải kết quả bài thi');
         this.isLoading = false;
       }

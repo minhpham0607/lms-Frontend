@@ -5,11 +5,13 @@ import { SessionService } from '../../../services/session.service';
 import { CourseService, Course } from '../../../services/course.service';
 import { SidebaradminComponent } from '../../../components/sidebaradmin/sidebaradmin.component';
 import { ProfileComponent } from '../../../components/profile/profile.component';
+import html2canvas from 'html2canvas';
 // Import jsPDF for PDF generation
-declare var jsPDF: any;
-// Import html2canvas for HTML to image conversion
-declare var html2canvas: any;
+import { jsPDF } from 'jspdf';
+// Thêm import cho jsPDF-AutoTable
+import autoTable from 'jspdf-autotable';
 
+// Import html2canvas for HTML to image conversion
 interface ChartData {
   label: string;
   value: number;
@@ -43,7 +45,6 @@ export class CourseStatisticsComponent implements OnInit {
   // Authentication & Profile
   username: string = '';
   avatarUrl: string = '';
-  userRole: string = '';
 
   // Loading & Error states
   loading = true;
@@ -108,9 +109,6 @@ export class CourseStatisticsComponent implements OnInit {
     // Get username from session
     this.username = this.sessionService.getUsername() || 'Admin';
     
-    // Get user role from session
-    this.userRole = this.sessionService.getUserRole() || 'admin';
-    
     // Try to get avatar from localStorage
     const avatarUrl = localStorage.getItem('avatarUrl');
     this.avatarUrl = avatarUrl || '';
@@ -123,8 +121,6 @@ export class CourseStatisticsComponent implements OnInit {
     try {
       // Load all courses
       this.courses = await this.courseService.getCourses().toPromise() || [];
-      console.log('🔍 Loaded courses data:', this.courses);
-      console.log('🔍 Sample course:', this.courses[0]); // Log first course to see structure
 
       // Check data quality
       this.checkDataQuality();
@@ -140,7 +136,6 @@ export class CourseStatisticsComponent implements OnInit {
       this.getRecentCourses();
 
     } catch (error) {
-      console.error('Error loading course statistics:', error);
       this.error = 'Không thể tải dữ liệu thống kê khóa học';
     } finally {
       this.loading = false;
@@ -150,21 +145,12 @@ export class CourseStatisticsComponent implements OnInit {
   private checkDataQuality() {
     this.hasCreationDates = this.courses.some(course => {
       const hasDate = this.getCourseCreationDate(course) !== null;
-      if (!hasDate) {
-        console.log('🔍 Course without date:', course.courseId, course.title);
-      }
       return hasDate;
     });
     
     this.coursesWithoutDates = this.courses.filter(course => 
       this.getCourseCreationDate(course) === null
     ).length;
-
-    console.log('🔍 Data quality check:', {
-      totalCourses: this.courses.length,
-      hasCreationDates: this.hasCreationDates,
-      coursesWithoutDates: this.coursesWithoutDates
-    });
   }
 
   private generateStatistics() {
@@ -529,13 +515,6 @@ export class CourseStatisticsComponent implements OnInit {
 
   getCourseDate(course: Course): string | undefined {
     const courseAny = course as any;
-    console.log('🔍 Getting date for course:', course.courseId, {
-      createdAt: courseAny.createdAt,
-      creationDate: courseAny.creationDate,
-      created_at: courseAny.created_at,
-      createDate: courseAny.createDate,
-      allFields: Object.keys(courseAny)
-    });
     
     // Try different possible field names
     return courseAny.createdAt || 
@@ -644,119 +623,272 @@ export class CourseStatisticsComponent implements OnInit {
   }
 
   // Export to PDF
-  async exportToPDF() {
-    const element = document.getElementById('statistics-content');
-    if (!element) {
-      console.error('Element not found for PDF export');
-      return;
+async exportToPDF() {
+  const element = document.getElementById('statistics-content');
+  if (!element) {
+    return;
+  }
+
+  const exportBtn = document.querySelector('.btn-pdf') as HTMLButtonElement;
+
+  try {
+    if (exportBtn) {
+      exportBtn.disabled = true;
+      exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xuất PDF...';
     }
 
-    try {
-      // Show loading state
-      const exportBtn = document.querySelector('.btn-pdf') as HTMLButtonElement;
-      if (exportBtn) {
-        exportBtn.disabled = true;
-        exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xuất PDF...';
+    // === Chụp ảnh nội dung ===
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff'
+    });
+    const imgData = canvas.toDataURL('image/png');
+
+    // === Chụp ảnh biểu đồ từ DOM (nếu có) ===
+    // Sử dụng querySelector để lấy đúng phần tử canvas/chart (nên dùng class hoặc id của chart)
+    let imgChartMonthly = '';
+    let imgChartStatus = '';
+    // Đảm bảo phần tử chart có id="chart-monthly" và id="chart-status" trong template
+    const chartMonthlyEl = document.querySelector('#chart-monthly') as HTMLElement;
+    const chartStatusEl = document.querySelector('#chart-status') as HTMLElement;
+    if (chartMonthlyEl) {
+      const chartMonthlyCanvas = await html2canvas(chartMonthlyEl, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#fff' });
+      imgChartMonthly = chartMonthlyCanvas.toDataURL('image/png');
+    }
+    if (chartStatusEl) {
+      const chartStatusCanvas = await html2canvas(chartStatusEl, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#fff' });
+      imgChartStatus = chartStatusCanvas.toDataURL('image/png');
+    }
+
+    // === Hàm load font base64 ===
+    const loadFontBase64 = async (path: string) => {
+      const fontFile = await fetch(path);
+      if (!fontFile.ok) {
+        throw new Error(`Không tìm thấy font: ${path}`);
       }
+      const buffer = await fontFile.arrayBuffer();
+      return btoa(
+        new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+      );
+    };
 
-      // Configure html2canvas options
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff'
-      });
+    // === Load 2 font cần dùng ===
+    const [fontRegularBase64, fontBoldBase64] = await Promise.all([
+      loadFontBase64('/assets/fonts/DejaVuSans.ttf'),
+      loadFontBase64('/assets/fonts/DejaVuLGCSans-Bold.ttf')
+    ]);
 
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      
-      // Calculate dimensions
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = pdfWidth - 20; // 10mm margin on each side
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
-      // Add title page
-      pdf.setFontSize(20);
-      pdf.text('Báo cáo thống kê khóa học', 105, 30, { align: 'center' });
-      
-      pdf.setFontSize(12);
-      pdf.text(`Ngày xuất: ${new Date().toLocaleDateString('vi-VN')}`, 105, 45, { align: 'center' });
-      pdf.text(`Người xuất: ${this.username}`, 105, 55, { align: 'center' });
+    // === Tạo PDF ===
+    const pdf = new jsPDF('p', 'mm', 'a4');
 
-      // Add summary statistics
+    // Thêm font thường và font đậm cùng tên "DejaVuSans"
+    (pdf as any).addFileToVFS('DejaVuSans.ttf', fontRegularBase64);
+    (pdf as any).addFont('DejaVuSans.ttf', 'DejaVuSans', 'normal');
+
+    (pdf as any).addFileToVFS('DejaVuLGCSans-Bold.ttf', fontBoldBase64);
+    (pdf as any).addFont('DejaVuLGCSans-Bold.ttf', 'DejaVuSans', 'bold');
+
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const imgWidth = pdfWidth - 20;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+// === Cấu hình lề ===
+const marginLeft = 30; // 3 cm
+const marginRight = 20; // 2 cm
+const marginTop = 20; // 2 cm
+const marginBottom = 20; // 2 cm
+const margin = 25
+const topY = marginTop; // hoặc 20 nếu muốn 2cm
+
+// === Kích thước trang ===
+const pageWidth = pdf.internal.pageSize.getWidth();
+const pageHeight = pdf.internal.pageSize.getHeight();
+const centerX = pageWidth / 2;
+
+// === Các khoảng cách dùng chung ===
+const lineHeight = 7;
+
+// === Tiêu đề quốc hiệu ở giữa ===
+pdf.setFontSize(14);
+pdf.setFont('DejaVuSans', 'bold');
+pdf.text('CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', centerX, marginTop, { align: 'center' });
+
+pdf.setFontSize(13);
+pdf.setFont('DejaVuSans', 'normal');
+pdf.text('Độc lập - Tự do - Hạnh phúc', centerX, marginTop + lineHeight, { align: 'center' });
+
+// === Ngày tháng căn phải ===
+const today = new Date();
+const formattedDate = `Hà Nội, ngày ${today.getDate().toString().padStart(2, '0')} tháng ${(today.getMonth() + 1)
+  .toString()
+  .padStart(2, '0')} năm ${today.getFullYear()}`;
+pdf.text(formattedDate, pageWidth - marginRight, marginTop + lineHeight * 2 + 5, { align: 'right' });
+let yPos = marginTop + 6 * lineHeight+10;
+      // Tiêu đề chính
       pdf.setFontSize(14);
-      pdf.text('Tóm tắt thống kê:', 20, 80);
-      
-      pdf.setFontSize(11);
-      let yPos = 95;
-      pdf.text(`• Tạo hôm nay: ${this.statistics.today} khóa học`, 25, yPos);
-      yPos += 10;
-      pdf.text(`• Tạo tuần này: ${this.statistics.thisWeek} khóa học`, 25, yPos);
-      yPos += 10;
-      pdf.text(`• Tạo tháng này: ${this.statistics.thisMonth} khóa học`, 25, yPos);
-      yPos += 10;
-      pdf.text(`• Tạo năm này: ${this.statistics.thisYear} khóa học`, 25, yPos);
-      yPos += 10;
-      pdf.text(`• Tổng số khóa học: ${this.statistics.total} khóa học`, 25, yPos);
+      pdf.setFont('DejaVuSans', 'bold');
+      pdf.text('BÁO CÁO THỐNG KÊ SỐ KHÓA HỌC', centerX, topY + 3 * lineHeight + 20, { align: 'center' });
 
-      // Add new page for charts
-      pdf.addPage();
-      
-      // Add the main content image
-      pdf.addImage(imgData, 'PNG', 0, 10, imgWidth, imgHeight);
-      let heightLeft = imgHeight;
+// Sau đó tiếp tục các phần khác (mục I, bảng...) và dùng marginLeft/marginRight để canh lề
+let yPos2 = marginTop + 6 * lineHeight+40;
 
-      // Add more pages if needed
-      while (heightLeft >= pdfHeight) {
-        heightLeft -= pdfHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, -(pdfHeight - heightLeft - 10), imgWidth, imgHeight);
-      }
 
-      // Add footer
-      if (heightLeft < pdfHeight - 50) {
-        pdf.text('CMC Learn - Hệ thống quản lý học tập', 105, 290, { align: 'center' });
-      }
+pdf.setFontSize(13);
+pdf.setFont('DejaVuSans', 'bold');
+pdf.text('I. TÓM TẮT THỐNG KÊ', marginLeft, yPos); 
+yPos += lineHeight;
 
-      // Save the PDF
-      const fileName = `thong-ke-khoa-hoc-${new Date().toISOString().split('T')[0]}.pdf`;
-      pdf.save(fileName);
+pdf.setFontSize(11);
+pdf.setFont('DejaVuSans', 'normal');
+pdf.text(`• Khóa học tạo hôm nay: ${this.statistics.today}`, margin + 5, yPos); yPos += lineHeight;
+pdf.text(`• Khóa học tạo trong tuần: ${this.statistics.thisWeek}`, margin + 5, yPos); yPos += lineHeight;
+pdf.text(`• Khóa học tạo trong tháng: ${this.statistics.thisMonth}`, margin + 5, yPos); yPos += lineHeight;
+pdf.text(`• Khóa học tạo trong năm: ${this.statistics.thisYear}`, margin + 5, yPos); yPos += lineHeight;
+pdf.text(`• Tổng số khóa học hiện có: ${this.statistics.total}`, margin + 5, yPos); yPos += lineHeight + 5;
 
-      // Reset button state
-      if (exportBtn) {
-        exportBtn.disabled = false;
-        exportBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Xuất PDF';
-      }
+// === Danh sách toàn bộ khóa học (ngay sau mục I, không sang trang mới) ===
+let tableStartY = yPos + 10; // yPos là vị trí kết thúc mục tóm tắt
+pdf.setFontSize(14);
+pdf.setFont('DejaVuSans', 'bold');
+pdf.text('II. DANH SÁCH TOÀN BỘ KHÓA HỌC', margin, tableStartY);
 
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      alert('Có lỗi xảy ra khi xuất PDF. Vui lòng thử lại.');
-      
-      // Reset button state
-      const exportBtn = document.querySelector('.btn-pdf') as HTMLButtonElement;
-      if (exportBtn) {
-        exportBtn.disabled = false;
-        exportBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Xuất PDF';
-      }
+// Chuẩn bị dữ liệu cho bảng
+const tableData = this.courses.map((course: any) => {
+  const dateField = course.createdAt ||
+                    course.creationDate ||
+                    course.created_at ||
+                    course.createDate ||
+                    course.dateCreated ||
+                    course.createTime;
+  let createdAt = '';
+  if (dateField) {
+    const d = new Date(dateField);
+    createdAt = !isNaN(d.getTime()) ? d.toLocaleDateString('vi-VN') : '';
+  }
+  return [
+    String(course.courseId),
+    course.title || '',
+    course.status || '',
+    createdAt
+  ];
+});
+
+// Vẽ bảng với autoTable, bắt đầu ngay sau mục tóm tắt
+autoTable(pdf, {
+  head: [['ID', 'Tên khóa học', 'Trạng thái', 'Ngày tạo']],
+  body: tableData,
+  startY: tableStartY + 7,
+  theme: 'grid',
+  styles: {
+    font: 'DejaVuSans',
+    fontSize: 10,
+    cellPadding: 3,
+    halign: 'left',
+    valign: 'middle',
+  },
+  headStyles: {
+    fillColor: [74, 144, 226],
+    textColor: 255,
+    fontStyle: 'bold',
+    halign: 'center'
+  },
+  columnStyles: {
+    0: { cellWidth: 20, halign: 'center' },
+    1: { cellWidth: 80 },
+    2: { cellWidth: 30, halign: 'center' },
+    3: { cellWidth: 30, halign: 'center' },
+  },
+   margin: { left: marginLeft, right: marginRight } // ← đảm bảo bảng cùng lề với mục I & II margin: { left: marginLeft, right: marginRight } // ← đảm bảo bảng cùng lề với mục I & II
+});
+
+
+// Footer cuối file
+pdf.setFontSize(10);
+pdf.setFont('DejaVuSans', 'italic');
+pdf.text('CMC Learn - Learning Management System', centerX, pageHeight - 10, { align: 'center' });
+
+// Lưu file PDF
+const fileName = `bao-cao-thong-ke-khoa-hoc-${today.toISOString().split('T')[0]}.pdf`;
+pdf.save(fileName);
+
+
+  } catch (error: any) {
+    alert(error?.message || 'Lỗi khi xuất PDF, vui lòng thử lại.');
+  } finally {
+    if (exportBtn) {
+      exportBtn.disabled = false;
+      exportBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Xuất PDF';
     }
   }
+}
+
 
   // Profile component event handlers
   onProfileUpdate() {
-    console.log('Profile update requested');
   }
 
   onLogout() {
     this.sessionService.logout();
   }
+}
 
-  getDisplayRole(role: string): string {
-    switch (role?.toLowerCase()) {
-      case 'admin': return 'Quản trị viên';
-      case 'instructor': return 'Giảng viên';
-      case 'student': return 'Học viên';
-      default: return role || 'Admin';
+// Thêm chức năng xuất PDF cho danh sách khóa học đang hiển thị (theo bộ lọc/pagination)
+export async function exportCoursesListToPDF(courses: Course[], username: string) {
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  pdf.setFont('courier', 'normal');
+  const pdfWidth = pdf.internal.pageSize.getWidth();
+
+  pdf.setFontSize(18);
+  pdf.text('Course List Export', pdfWidth / 2, 20, { align: 'center' });
+
+  pdf.setFontSize(12);
+  pdf.text(`Exported by: ${username}`, pdfWidth / 2, 30, { align: 'center' });
+  pdf.text(`Export date: ${new Date().toLocaleDateString('en-US')}`, pdfWidth / 2, 38, { align: 'center' });
+
+  // Table header
+  pdf.setFontSize(11);
+  let y = 50;
+  pdf.text('ID', 10, y);
+  pdf.text('Title', 30, y);
+  pdf.text('Status', 110, y);
+  pdf.text('Created At', 140, y);
+
+  pdf.setLineWidth(0.1);
+  pdf.line(10, y + 2, pdfWidth - 10, y + 2);
+
+  // Table rows
+  y += 8;
+  courses.forEach((course, idx) => {
+    if (y > 280) {
+      pdf.addPage();
+      y = 20;
     }
-  }
+    // Sử dụng hàm getCourseCreationDate nếu có
+    let createdAt = '';
+    if (typeof course === 'object' && course) {
+      const date = (course as any).createdAt ||
+                   (course as any).creationDate ||
+                   (course as any).created_at ||
+                   (course as any).createDate ||
+                   (course as any).dateCreated ||
+                   (course as any).createTime;
+      if (date) {
+        const d = new Date(date);
+        createdAt = !isNaN(d.getTime()) ? d.toLocaleDateString('en-US') : '';
+      }
+    }
+    pdf.text(String(course.courseId), 10, y);
+    pdf.text(course.title, 30, y, { maxWidth: 70 });
+    pdf.text(course.status, 110, y);
+    pdf.text(createdAt, 140, y);
+    y += 8;
+  });
+
+  pdf.setFontSize(10);
+  pdf.text(`Total courses: ${courses.length}`, 10, y + 10);
+
+  pdf.save(`danh-sach-khoa-hoc-${new Date().toISOString().split('T')[0]}.pdf`);
 }

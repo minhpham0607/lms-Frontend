@@ -138,7 +138,6 @@ export class CourseService {
     return this.http.get<any>(`http://localhost:8080/api/enrollments/instructor-statistics`, { headers })
       .pipe(
         catchError((error) => {
-          console.log('Instructor statistics endpoint not available, using fallback method');
           return this.getInstructorCoursesWithStats();
         })
       );
@@ -157,7 +156,6 @@ export class CourseService {
     return this.http.get<Enrollment[]>(`http://localhost:8080/api/enrollments/instructor`, { headers })
       .pipe(
         catchError((error) => {
-          console.log('Instructor enrollments endpoint not available, using fallback');
           // Fallback: get enrollments through courses
           return of([]);
         })
@@ -219,22 +217,16 @@ export class CourseService {
 
   // ✅ Get enrollments for a specific course (instructor can only access their own courses)
   getEnrollmentsByCourse(courseId: number): Observable<any[]> {
-    console.log(`🔄 Getting enrollments for course ${courseId}...`);
     let headers = new HttpHeaders();
     if (isPlatformBrowser(this.platformId)) {
       const token = localStorage.getItem('token');
       if (token) {
         headers = headers.set('Authorization', `Bearer ${token}`);
-        console.log(`✅ Token added to request for course ${courseId}`);
-      } else {
-        console.warn(`⚠️ No token found for course ${courseId} request`);
       }
     }
     const url = `${this.baseUrl.replace('/courses', '/enrollments')}/course/${courseId}/enrollments`;
-    console.log(`📡 Making request to: ${url}`);
     return this.http.get<any[]>(url, { headers }).pipe(
       map(response => {
-        console.log(`✅ Raw response for course ${courseId}:`, response);
         // API trả về List<UserDTO>, chúng ta cần chuyển đổi thành enrollment format
         const enrollments = response.map((user: any, index: number) => ({
           enrollmentId: user.enrollmentId || `${courseId}_${user.userId || user.id}_${index}`,
@@ -247,14 +239,9 @@ export class CourseService {
           email: user.email,
           fullName: user.fullName || `${user.firstName || ''} ${user.lastName || ''}`.trim()
         }));
-        console.log(`✅ Processed enrollments for course ${courseId}:`, enrollments);
         return enrollments;
       }),
       catchError(error => {
-        console.error(`❌ Error getting enrollments for course ${courseId}:`, error);
-        if (error.status === 403) {
-          console.error(`🚫 Forbidden: Instructor may not own course ${courseId}`);
-        }
         throw error;
       })
     );
@@ -287,7 +274,6 @@ export class CourseService {
                 enrollmentCount: enrollments ? enrollments.length : 0
               })),
               catchError((error) => {
-                console.warn(`Failed to load enrollments for course ${course.courseId}:`, error);
                 return of({
                   ...course,
                   enrollments: [],
@@ -300,7 +286,6 @@ export class CourseService {
           return forkJoin(enrollmentRequests);
         }),
         catchError((error) => {
-          console.error('Failed to load instructor courses:', error);
           return of([]);
         })
       );

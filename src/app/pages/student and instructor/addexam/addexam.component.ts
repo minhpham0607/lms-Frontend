@@ -109,12 +109,6 @@ export class AddExamComponent implements OnInit, AfterViewInit {
     this.userRole = this.sessionService.getUserRole() || 'student';
     this.avatarUrl = '';
 
-    // Debug logging
-    console.log('🔍 AddExam component initialized');
-    console.log('👤 User role:', this.userRole);
-    console.log('🎓 Is Student:', this.sessionService.isStudent());
-    console.log('👨‍🏫 Can Manage Content:', this.canManageContent());
-
     // Get courseId and edit parameters from query params
     if (isPlatformBrowser(this.platformId)) {
       this.route.queryParams.subscribe(params => {
@@ -125,16 +119,9 @@ export class AddExamComponent implements OnInit, AfterViewInit {
         this.editingQuizId = params['editQuizId'] ? +params['editQuizId'] : null;
         this.isEditMode = !!this.editingQuizId;
         
-        console.log('📚 Course ID from query params:', this.courseId);
-        console.log('📚 Course Name from query params:', courseName);
-        console.log('✏️ Edit mode:', this.isEditMode);
-        console.log('✏️ Editing quiz ID:', this.editingQuizId);
-
         if (this.courseId) {
           this.examData.courseId = this.courseId;
-          console.log('✅ Set examData.courseId to:', this.examData.courseId);
         } else {
-          console.log('⚠️ No courseId found, setting to 0');
           this.examData.courseId = 0;
         }
 
@@ -150,7 +137,6 @@ export class AddExamComponent implements OnInit, AfterViewInit {
             price: 0,
             thumbnailUrl: ''
           };
-          console.log('✅ Using course name from params:', decodeURIComponent(courseName));
           
           // Load modules and quiz data if in edit mode
           this.loadModules();
@@ -158,7 +144,6 @@ export class AddExamComponent implements OnInit, AfterViewInit {
             this.loadQuizDataForEdit();
           }
         } else if (this.courseId) {
-          console.log('🔄 No courseName in params, trying API fallback...');
           this.loadCourseInfo();
         }
       });
@@ -174,12 +159,9 @@ export class AddExamComponent implements OnInit, AfterViewInit {
   loadCourseInfo(): void {
     if (!this.courseId) return;
 
-    console.log('🔄 Loading course info for courseId:', this.courseId);
-
     this.courseService.getCourseById(this.courseId).subscribe({
       next: (course: Course) => {
         this.courseInfo = course;
-        console.log('✅ Course info loaded successfully:', course.title);
         
         // Load modules for this course
         this.loadModules();
@@ -190,8 +172,6 @@ export class AddExamComponent implements OnInit, AfterViewInit {
         }
       },
       error: (err: any) => {
-        console.error('❌ Error loading course info:', err);
-
         // Fallback: Create a temporary courseInfo with generic title
         this.courseInfo = {
           courseId: this.courseId!,
@@ -203,7 +183,6 @@ export class AddExamComponent implements OnInit, AfterViewInit {
           price: 0,
           thumbnailUrl: ''
         };
-        console.log('🔧 Using fallback course title:', `Course ${this.courseId}`);
         
         // Still try to load modules
         this.loadModules();
@@ -214,15 +193,11 @@ export class AddExamComponent implements OnInit, AfterViewInit {
   loadModules(): void {
     if (!this.courseId) return;
 
-    console.log('🔄 Loading modules for courseId:', this.courseId);
-
     this.moduleService.getModulesByCourse(this.courseId).subscribe({
       next: (modules: ModuleItem[]) => {
         this.modules = modules.sort((a, b) => a.orderNumber - b.orderNumber);
-        console.log('✅ Modules loaded successfully:', this.modules.length, 'modules');
       },
       error: (err: any) => {
-        console.error('❌ Error loading modules:', err);
         this.modules = [];
       }
     });
@@ -232,11 +207,8 @@ export class AddExamComponent implements OnInit, AfterViewInit {
   loadQuizDataForEdit(): void {
     if (!this.editingQuizId) return;
 
-    console.log('🔄 Loading quiz data for edit, quizId:', this.editingQuizId);
-
     this.examService.getQuizById(this.editingQuizId).subscribe({
       next: (quiz: any) => {
-        console.log('✅ Quiz data loaded for editing:', quiz);
         
         // Populate form with existing data
         this.examData = {
@@ -261,18 +233,12 @@ export class AddExamComponent implements OnInit, AfterViewInit {
         // Set selected module if exists
         if (quiz.moduleId) {
           this.selectedModuleId = quiz.moduleId;
-          console.log('📝 Setting selectedModuleId to:', this.selectedModuleId);
-          console.log('📝 Setting examData.moduleId to:', this.examData.moduleId);
         } else {
           this.selectedModuleId = null;
-          console.log('📝 No module associated with this quiz');
         }
         
-        console.log('📝 Form populated with quiz data:', this.examData);
-        console.log('📝 Final selectedModuleId:', this.selectedModuleId);
       },
       error: (err: any) => {
-        console.error('❌ Error loading quiz data:', err);
         alert('Không thể tải dữ liệu bài thi để chỉnh sửa: ' + (err.error?.message || err.message || 'Lỗi không xác định'));
         
         // Navigate back to exams page on error
@@ -283,17 +249,13 @@ export class AddExamComponent implements OnInit, AfterViewInit {
 
   // Handle module selection
   onModuleSelectionChange(): void {
-    console.log('🔄 Module selection changed, selectedModuleId:', this.selectedModuleId);
     
     if (this.selectedModuleId && this.selectedModuleId !== null) {
       this.examData.moduleId = this.selectedModuleId;
-      console.log('📝 Module selected:', this.examData.moduleId);
     } else {
       this.examData.moduleId = undefined;
-      console.log('📝 Module selection cleared, examData.moduleId:', this.examData.moduleId);
     }
     
-    console.log('📝 Final examData.moduleId:', this.examData.moduleId);
   }
 
   // Tab management
@@ -307,13 +269,6 @@ export class AddExamComponent implements OnInit, AfterViewInit {
                    this.courseId !== null && 
                    this.courseId > 0 && 
                    this.examData.courseId > 0;
-    
-    if (!isValid) {
-      console.log('❌ Form validation failed:');
-      console.log('📝 Title valid:', this.examData.title.trim().length > 0);
-      console.log('📚 CourseId (component):', this.courseId);
-      console.log('📚 CourseId (examData):', this.examData.courseId);
-    }
     
     return isValid;
   }
@@ -339,11 +294,9 @@ export class AddExamComponent implements OnInit, AfterViewInit {
     if (this.isEditMode && this.editingQuizId) {
       // Update existing quiz - add quizId to DTO
       examDto.quizId = this.editingQuizId;
-      console.log('💾 Updating existing exam as draft:', examDto);
       
       this.examService.updateQuiz(examDto).subscribe({
         next: (response: any) => {
-          console.log('✅ Exam updated successfully:', response);
           this.isSaving = false;
           alert('Bài thi đã được cập nhật thành công!');
           
@@ -356,11 +309,9 @@ export class AddExamComponent implements OnInit, AfterViewInit {
       });
     } else {
       // Create new quiz
-      console.log('💾 Saving exam as draft:', examDto);
       
       this.examService.createQuiz(examDto).subscribe({
         next: (response: any) => {
-          console.log('✅ Exam saved successfully:', response);
           this.isSaving = false;
           alert('Exam đã được lưu thành công!');
           
@@ -376,10 +327,6 @@ export class AddExamComponent implements OnInit, AfterViewInit {
 
   // Handle save errors
   private handleSaveError(err: any): void {
-    console.error('❌ Error saving/updating exam:', err);
-    console.error('❌ Error status:', err.status);
-    console.error('❌ Error error:', err.error);
-    console.error('❌ Error message:', err.message);
     this.isSaving = false;
     
     let errorMessage = `Không thể ${this.isEditMode ? 'cập nhật' : 'lưu'} exam: `;
@@ -407,11 +354,9 @@ export class AddExamComponent implements OnInit, AfterViewInit {
     if (this.isEditMode && this.editingQuizId) {
       // Update existing quiz and publish
       examDto.quizId = this.editingQuizId;
-      console.log('📢 Updating and publishing existing exam:', examDto);
       
       this.examService.updateQuiz(examDto).subscribe({
         next: (response: any) => {
-          console.log('✅ Exam updated and published successfully:', response);
           this.isSaving = false;
           alert('Bài thi đã được cập nhật và xuất bản thành công!');
           
@@ -424,11 +369,9 @@ export class AddExamComponent implements OnInit, AfterViewInit {
       });
     } else {
       // Create new quiz and publish
-      console.log('📢 Saving and publishing new exam:', examDto);
       
       this.examService.createQuiz(examDto).subscribe({
         next: (response: any) => {
-          console.log('✅ Exam saved and published successfully:', response);
           this.isSaving = false;
           alert('Exam đã được lưu và xuất bản thành công!');
           
@@ -464,20 +407,6 @@ export class AddExamComponent implements OnInit, AfterViewInit {
       dto.quizId = this.editingQuizId;
     }
 
-    console.log('🔧 Building exam DTO:');
-    console.log('📝 Title:', dto.title);
-    console.log('📚 CourseId:', dto.courseId);
-    console.log('📂 ModuleId:', dto.moduleId);
-    console.log('🧪 QuizType:', dto.quizType);
-    console.log('📖 Description:', dto.description);
-    console.log('⏱️ TimeLimit:', dto.timeLimit);
-    console.log('🔢 MaxAttempts:', dto.maxAttempts);
-    console.log('🎯 Publish:', dto.publish);
-    console.log('✏️ Edit Mode:', this.isEditMode);
-    console.log('🆔 Quiz ID:', dto.quizId);
-    console.log('📍 selectedModuleId (UI):', this.selectedModuleId);
-    console.log('📍 examData.moduleId (data):', this.examData.moduleId);
-
     return dto;
   }
 
@@ -501,8 +430,6 @@ export class AddExamComponent implements OnInit, AfterViewInit {
           questionType: this.examData.quizType
         }
       });
-    } else {
-      console.error('❌ Cannot navigate to create question: missing courseId or courseInfo');
     }
   }
 
@@ -522,17 +449,14 @@ export class AddExamComponent implements OnInit, AfterViewInit {
 
   // Navigation methods
   navigateToHome(): void {
-    console.log('navigateToHome called');
     this.currentPage = 'Home';
   }
 
   navigateToDiscussion(): void {
-    console.log('navigateToDiscussion called');
     this.currentPage = 'Discussion';
   }
 
   navigateToGrades(): void {
-    console.log('navigateToGrades called');
     this.currentPage = 'Grades';
   }
 
@@ -541,9 +465,6 @@ export class AddExamComponent implements OnInit, AfterViewInit {
       event.preventDefault();
       event.stopPropagation();
     }
-
-    console.log('🔄 Navigating to modules...');
-
     if (this.courseId && this.courseInfo) {
       this.router.navigate(['/module'], {
         queryParams: {
@@ -552,8 +473,6 @@ export class AddExamComponent implements OnInit, AfterViewInit {
           page: 'Modules'
         }
       });
-    } else {
-      console.error('❌ Cannot navigate to modules: missing courseId or courseInfo');
     }
   }
 
@@ -565,14 +484,11 @@ export class AddExamComponent implements OnInit, AfterViewInit {
           courseName: encodeURIComponent(this.courseInfo.title)
         }
       });
-    } else {
-      console.error('❌ Cannot navigate to tests: missing courseId or courseInfo');
     }
   }
 
   // Profile methods
   onProfileUpdate(): void {
-    console.log('Profile update requested');
   }
 
   onLogout(): void {
@@ -676,7 +592,6 @@ export class AddExamComponent implements OnInit, AfterViewInit {
   }
 
   navigateToVideo(): void {
-    console.log('navigateToVideo called');
     if (this.courseId) {
       // Check if user is instructor/admin
       if (this.canManageContent()) {

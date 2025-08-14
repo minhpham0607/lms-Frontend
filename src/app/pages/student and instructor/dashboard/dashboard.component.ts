@@ -54,13 +54,6 @@ export class DashboardComponent implements OnInit {
       
       // Chuyển đổi role thành tên hiển thị
       this.roleDisplayName = this.getRoleDisplayName(userInfo.role);
-      
-      console.log('User info loaded:', { 
-        role: this.userRole, 
-        name: this.userName, 
-        displayName: this.roleDisplayName,
-        avatar: this.avatarUrl
-      });
     }
   }
 
@@ -85,7 +78,6 @@ export class DashboardComponent implements OnInit {
 
   // Profile component event handlers
   onProfileUpdate() {
-    console.log('Profile update requested');
   }
 
   onLogout() {

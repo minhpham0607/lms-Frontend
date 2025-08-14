@@ -1,0 +1,257 @@
+<!-- Payment Modal -->
+<div *ngIf="isVisible" class="modal-overlay" (click)="onClose()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title">
+        <i class="fas fa-credit-card me-2"></i>
+        Thanh toán khóa học
+      </h3>
+      <button type="button" class="btn-close" (click)="onClose()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Course Info -->
+      <div *ngIf="course" class="course-info mb-4">
+        <div class="course-card">
+          <img 
+            [src]="course.imageUrl || '/assets/default-course.png'" 
+            [alt]="course.title"
+            class="course-thumbnail"
+          >
+          <div class="course-details">
+            <h4 class="course-title">{{ course.title }}</h4>
+            <p class="course-instructor">Giảng viên: {{ course.instructorName || 'Chưa có thông tin' }}</p>
+            <div class="course-price">
+              <span class="price-label">Giá khóa học:</span>
+              <span class="price-amount">{{ formatCurrency(course.price) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payment Methods -->
+      <div class="payment-methods mb-4">
+        <label class="form-label">Chọn phương thức thanh toán:</label>
+        <div class="payment-options">
+          <div 
+            *ngFor="let method of paymentMethods" 
+            class="payment-option"
+            [class.selected]="selectedPaymentMethod === method.value"
+            (click)="selectedPaymentMethod = method.value"
+          >
+            <div class="payment-option-content">
+              <i [class]="method.icon"></i>
+              <span>{{ method.label }}</span>
+            </div>
+            <div class="payment-option-radio">
+              <input 
+                type="radio" 
+                [value]="method.value" 
+                [(ngModel)]="selectedPaymentMethod"
+                [id]="'payment-' + method.value"
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VNPay Form (hiển thị khi chọn VNPay) -->
+      <div *ngIf="selectedPaymentMethod === 'vnpay'" class="vnpay-form mb-4">
+        <div class="card border-primary">
+          <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">
+              <i class="fas fa-credit-card me-2"></i>
+              Thông tin thanh toán VNPay
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="alert alert-info">
+              <i class="fas fa-info-circle me-2"></i>
+              <strong>Sandbox Test:</strong> Sử dụng thông tin thẻ test bên dưới để thanh toán
+            </div>
+            
+            <!-- Test Cards Info -->
+            <div class="test-cards mb-3">
+              <h6 class="fw-bold">Thẻ test VNPay:</h6>
+              <div class="row">
+                <div class="col-md-4">
+                  <div class="test-card">
+                    <strong>NCB Bank</strong><br>
+                    <code>9704198526191432198</code><br>
+                    <small>NGUYEN VAN A - 07/15</small>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="test-card">
+                    <strong>Techcombank</strong><br>
+                    <code>9704061006060005047</code><br>
+                    <small>NGUYEN VAN A - 11/19</small>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="test-card">
+                    <strong>OTP SMS</strong><br>
+                    <code class="text-primary">123456</code><br>
+                    <small>Mã xác thực</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Payment Amount -->
+            <div class="payment-amount">
+              <label class="form-label">Số tiền thanh toán:</label>
+              <div class="input-group">
+                <span class="input-group-text">
+                  <i class="fas fa-dollar-sign"></i>
+                </span>
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  [value]="formatCurrency(course?.price || 0)"
+                  readonly
+                >
+                <span class="input-group-text">VND</span>
+              </div>
+            </div>
+
+            <!-- Order Info -->
+            <div class="mt-3">
+              <label class="form-label">Nội dung thanh toán:</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                [value]="'Thanh toan khoa hoc: ' + (course?.title || '')"
+                readonly
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ZaloPay Form (hiển thị khi chọn ZaloPay) -->
+      <div *ngIf="selectedPaymentMethod === 'zalopay'" class="zalopay-form mb-4">
+        <div class="card border-warning">
+          <div class="card-header bg-warning text-dark">
+            <h5 class="card-title mb-0">
+              <i class="fas fa-wallet me-2"></i>
+              Thông tin thanh toán ZaloPay
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="alert alert-info">
+              <i class="fas fa-info-circle me-2"></i>
+              <strong>Sandbox Test:</strong> Sử dụng tài khoản test ZaloPay để thanh toán
+            </div>
+            
+            <!-- Test Account Info -->
+            <div class="test-accounts mb-3">
+              <h6 class="fw-bold">Tài khoản test ZaloPay:</h6>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="test-account">
+                    <strong>Số điện thoại:</strong><br>
+                    <code>0123456789</code><br>
+                    <small>Tài khoản test sandbox</small>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="test-account">
+                    <strong>Mật khẩu:</strong><br>
+                    <code class="text-primary">123456</code><br>
+                    <small>Mật khẩu test</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Payment Amount -->
+            <div class="payment-amount">
+              <label class="form-label">Số tiền thanh toán:</label>
+              <div class="input-group">
+                <span class="input-group-text">
+                  <i class="fas fa-dollar-sign"></i>
+                </span>
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  [value]="formatCurrency(course?.price || 0)"
+                  readonly
+                >
+                <span class="input-group-text">VND</span>
+              </div>
+            </div>
+
+            <!-- Order Info -->
+            <div class="mt-3">
+              <label class="form-label">Nội dung thanh toán:</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                [value]="'Thanh toan khoa hoc: ' + (course?.title || '')"
+                readonly
+              >
+            </div>
+
+            <!-- Description -->
+            <div class="mt-3">
+              <label class="form-label">Mô tả:</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                [value]="'Khoa hoc: ' + (course?.title || '') + ' - Giang vien: ' + (course?.instructorName || 'Chua co thong tin')"
+                readonly
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error Message -->
+      <div *ngIf="errorMessage" class="alert alert-danger">
+        <i class="fas fa-exclamation-circle me-2"></i>
+        {{ errorMessage }}
+      </div>
+
+      <!-- Payment Summary -->
+      <div class="payment-summary">
+        <div class="summary-row">
+          <span>Giá khóa học:</span>
+          <span>{{ formatCurrency(course?.price || 0) }}</span>
+        </div>
+        <div class="summary-row">
+          <span>Phí xử lý:</span>
+          <span>0 ₫</span>
+        </div>
+        <hr>
+        <div class="summary-row total">
+          <span><strong>Tổng cộng:</strong></span>
+          <span><strong>{{ formatCurrency(course?.price || 0) }}</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button 
+        type="button" 
+        class="btn btn-secondary me-2" 
+        (click)="onClose()"
+        [disabled]="isLoading"
+      >
+        Hủy
+      </button>
+      <button 
+        type="button" 
+        class="btn btn-primary" 
+        (click)="onPayment()"
+        [disabled]="isLoading || !course"
+      >
+        <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+        <i *ngIf="!isLoading" class="fas fa-credit-card me-2"></i>
+        {{ isLoading ? 'Đang xử lý...' : 'Thanh toán ngay' }}
+      </button>
+    </div>
+  </div>
+</div>

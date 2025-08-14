@@ -16,36 +16,30 @@ export class AvatarService {
    * @returns Full URL to avatar or null if no avatar
    */
   processAvatarUrl(avatarUrl: string | null | undefined): string | null {
-    console.log('🔍 Processing avatar URL:', avatarUrl);
     
     if (!avatarUrl) {
-      console.log('❌ No avatar URL provided');
       return null;
     }
 
     // Nếu URL bắt đầu bằng http(s), giữ nguyên
     if (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://')) {
-      console.log('✅ Avatar URL is already full URL:', avatarUrl);
       return avatarUrl;
     }
 
     // Nếu URL bắt đầu bằng /uploads/avatars/, thêm base URL
     if (avatarUrl.startsWith('/uploads/avatars/')) {
       const directUrl = `${this.BASE_URL}${avatarUrl}`;
-      console.log('✅ Avatar URL with base URL:', directUrl);
       return directUrl;
     }
 
     // Nếu bắt đầu bằng /, thêm base URL
     if (avatarUrl.startsWith('/')) {
       const fullUrl = `${this.BASE_URL}${avatarUrl}`;
-      console.log('✅ Avatar URL with base URL:', fullUrl);
       return fullUrl;
     }
 
     // Nếu chỉ là filename, thêm đường dẫn đầy đủ
     const fullUrl = `${this.BASE_URL}/uploads/avatars/${avatarUrl}`;
-    console.log('✅ Avatar URL with full path:', fullUrl);
     return fullUrl;
   }
 
@@ -119,12 +113,10 @@ export class AvatarService {
     return new Observable(observer => {
       const img = new Image();
       img.onload = () => {
-        console.log('✅ Avatar exists:', avatarUrl);
         observer.next(true);
         observer.complete();
       };
       img.onerror = () => {
-        console.log('❌ Avatar not found:', avatarUrl);
         observer.next(false);
         observer.complete();
       };
@@ -144,7 +136,6 @@ export class AvatarService {
 
     this.checkAvatarExists(urls[index]).subscribe((exists: boolean) => {
       if (exists) {
-        console.log('✅ Fallback avatar found:', urls[index]);
         observer.next(urls[index]);
         observer.complete();
       } else {
@@ -166,16 +157,11 @@ export class AvatarService {
    * @param avatarUrl - URL cần test
    */
   testAvatarUrl(avatarUrl: string): void {
-    console.log('🧪 Testing avatar URL:', avatarUrl);
     
     const img = new Image();
     img.onload = () => {
-      console.log('✅ SUCCESS - Avatar loaded:', avatarUrl);
-      console.log('Image dimensions:', img.width, 'x', img.height);
     };
     img.onerror = (error) => {
-      console.log('❌ FAILED - Avatar not found:', avatarUrl);
-      console.log('Error details:', error);
     };
     img.src = avatarUrl;
   }
@@ -185,7 +171,6 @@ export class AvatarService {
    * @param originalPath - Đường dẫn gốc từ database
    */
   testAllPossibleUrls(originalPath: string): void {
-    console.log('🧪 Testing all possible URLs for:', originalPath);
     
     const filename = originalPath.split('/').pop();
     const testUrls = [
@@ -211,7 +196,6 @@ export class AvatarService {
    * @returns string
    */
   handleAvatarError(originalUrl: string): string {
-    console.log('❌ Avatar error for URL:', originalUrl);
     return this.getDefaultAvatarUrl();
   }
 }
